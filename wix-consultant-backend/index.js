@@ -82,6 +82,17 @@ const { adminRoute } = require("./Routes/adminRoute");
 const { wixInstallectionRoute } = require("./Routes/wixInstallectionRoute");
 const wixRoute = require("./Routes/wixRoute");
 const {wixStroeFrontRoute} = require("./Routes/wixStroeFrontRoute");
+
+app.use("/api/health", (req, res) => {
+
+  res.send("server is runing On ? ");
+  res.status(200).json({
+    success: true,
+    message: "Voucher bought successfully",
+
+  });
+});
+
 app.use("/api/call", callRoutes);
 app.use("/api/auth", signinSignupRouter);
 app.use("/api/users", userDetailsRouter);
