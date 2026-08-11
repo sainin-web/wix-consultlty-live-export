@@ -85,7 +85,7 @@ const {wixStroeFrontRoute} = require("./Routes/wixStroeFrontRoute");
 
 app.use("/api/health", (req, res) => {
 
-  res.send("server is runing On ? ");
+  console.log("server is runing On ? ");
   res.status(200).json({
     success: true,
     message: "Voucher bought successfully",
