@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "../../components/ConsultantCards/ConsultantCards.css";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchConsultantById } from "../Redux/slices/ConsultantSlices";
 import { checkUserBalance, openCallPage } from "../middle-ware/OpenCallingPage";

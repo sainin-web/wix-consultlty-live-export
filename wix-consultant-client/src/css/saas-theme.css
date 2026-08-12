@@ -61,6 +61,8 @@
   --store-content-width: 1200px;
   --store-shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.04), 0 2px 8px rgba(17, 24, 39, 0.05);
   --store-shadow-md: 0 4px 6px -1px rgba(17, 24, 39, 0.05), 0 10px 24px -4px rgba(17, 24, 39, 0.08);
+  --store-overlay-bg: rgba(0, 0, 0, 0.5);
+  --store-modal-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 
   /* Re-map Polaris brand tokens to the Consultly palette */
   --p-color-bg-fill-brand: var(--saas-primary);

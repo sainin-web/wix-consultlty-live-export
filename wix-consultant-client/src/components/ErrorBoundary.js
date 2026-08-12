@@ -1,5 +1,4 @@
 import React from 'react';
-import './ConsultantCards/ConsultantCards.css';
 import { Box, Spinner, Text } from '@shopify/polaris';
 
 class ErrorBoundary extends React.Component {
