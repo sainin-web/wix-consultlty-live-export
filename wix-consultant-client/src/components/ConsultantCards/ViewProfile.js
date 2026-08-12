@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../../components/ConsultantCards/ConsultantCards.css";
@@ -16,23 +16,39 @@ function ViewProfile() {
   const { shop_id, consultant_id } = useParams();
   const navigate = useNavigate();
 
-  const { consultantOverview, loading } = useSelector(
+  const { consultantOverview, loading, consultants } = useSelector(
     (state) => state.consultants,
   );
   const { voucherData } = useSelector((state) => state.users);
+
+  // Check if we have consultant in listing cache
+  const cachedConsultant = React.useMemo(() => {
+    if (!consultants?.findConsultant) return null;
+    return consultants.findConsultant.find((c) => c._id === consultant_id);
+  }, [consultants, consultant_id]);
+
   useEffect(() => {
-    dispatch(
-      fetchConsultantById({ shop_id: shop_id, consultant_id: consultant_id }),
-    );
-    dispatch(fetchVoucherData(shop_id));
-  }, [dispatch, shop_id, consultant_id]);
+    // Only fetch if not in cache
+    if (!cachedConsultant && !consultantOverview?.consultant) {
+      dispatch(
+        fetchConsultantById({ shop_id: shop_id, consultant_id: consultant_id }),
+      );
+    }
+    // Only fetch voucher data if not already cached
+    if (!voucherData) {
+      dispatch(fetchVoucherData(shop_id));
+    }
+  }, [dispatch, shop_id, consultant_id, cachedConsultant, consultantOverview, voucherData]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  const consultantView = consultantOverview?.consultant;
-  const imageUrl = `${process.env.REACT_APP_BACKEND_HOST}/${consultantView?.profileImage?.replace("\\", "/")}`;
+  // Use cached consultant data if available, otherwise use fetched data
+  const consultantView = cachedConsultant || consultantOverview?.consultant;
+  const imageUrl = consultantView?.profileImage
+    ? `${process.env.REACT_APP_BACKEND_HOST}/${consultantView.profileImage.replace("\\", "/")}`
+    : "/images/flag/teamdefault.png";
 
   const startCall = async ({ receiverId, type }) => {
     await openCallPage({

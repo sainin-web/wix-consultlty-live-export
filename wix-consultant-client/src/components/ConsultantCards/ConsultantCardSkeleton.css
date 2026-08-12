@@ -1,0 +1,124 @@
+/* Skeleton loading animations */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.consultant-loading-state {
+  padding: var(--store-space-4);
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--store-space-4);
+}
+
+.skeleton-card {
+  background: var(--store-surface);
+  border: 1px solid var(--store-border);
+  border-radius: var(--store-radius-md);
+  padding: var(--store-space-3);
+  animation: skeleton-pulse 2s ease-in-out infinite;
+}
+
+.skeleton-image {
+  width: 100%;
+  height: 200px;
+  background: #e5e7eb;
+  border-radius: var(--store-radius-md);
+  margin-bottom: var(--store-space-3);
+}
+
+.skeleton-line {
+  height: 12px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  margin-bottom: var(--store-space-2);
+}
+
+.skeleton-line-title {
+  height: 18px;
+  width: 70%;
+  margin-bottom: var(--store-space-3);
+}
+
+.skeleton-line-subtitle {
+  height: 14px;
+  width: 50%;
+  margin-bottom: var(--store-space-2);
+}
+
+.skeleton-line-text {
+  height: 12px;
+  width: 100%;
+}
+
+.skeleton-buttons {
+  display: flex;
+  gap: var(--store-space-2);
+  margin-top: var(--store-space-3);
+}
+
+.skeleton-button {
+  height: 36px;
+  flex: 1;
+  background: #e5e7eb;
+  border-radius: var(--store-radius-sm);
+}
+
+/* Empty and error states */
+.consultant-empty-state,
+.consultant-error-state {
+  padding: var(--store-space-5);
+  text-align: center;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-content,
+.error-content {
+  max-width: 400px;
+}
+
+.empty-icon,
+.error-icon {
+  font-size: 48px;
+  margin-bottom: var(--store-space-3);
+  display: block;
+}
+
+.empty-content h3,
+.error-content h3 {
+  color: var(--store-text);
+  margin: 0 0 var(--store-space-2) 0;
+  font-size: 18px;
+}
+
+.empty-content p,
+.error-content p {
+  color: var(--store-text-muted);
+  margin: 0 0 var(--store-space-3) 0;
+}
+
+.error-retry-button {
+  background: var(--store-primary);
+  color: white;
+  border: none;
+  padding: var(--store-space-2) var(--store-space-3);
+  border-radius: var(--store-radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.error-retry-button:hover {
+  opacity: 0.9;
+}

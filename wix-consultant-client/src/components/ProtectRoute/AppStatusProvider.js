@@ -52,6 +52,21 @@ export const AppStatusProvider = ({ children }) => {
 
     const checkAppStatus = async () => {
       try {
+        // Check if we have a recent validation cached
+        const lastValidationTime = localStorage.getItem("app_status_validated_at");
+        const now = Date.now();
+        const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+
+        // Skip validation if cached and still valid
+        if (lastValidationTime && (now - parseInt(lastValidationTime)) < CACHE_DURATION) {
+          const cachedEnabled = localStorage.getItem("app_status_enabled");
+          if (cachedEnabled !== null) {
+            setAppEnabled(cachedEnabled === "true");
+            setLoading(false);
+            return;
+          }
+        }
+
         const adminIdLocal =
           shop_id || localStorage.getItem(KEYS.SHOP_ID) || undefined;
 
@@ -68,12 +83,19 @@ export const AppStatusProvider = ({ children }) => {
         if (cancelled) return;
 
         if (response.data?.success) {
-          setAppEnabled(Boolean(response.data.data));
+          const isEnabled = Boolean(response.data.data);
+          setAppEnabled(isEnabled);
+          // Cache the result
+          localStorage.setItem("app_status_enabled", String(isEnabled));
+          localStorage.setItem("app_status_validated_at", String(now));
+
           if (response.data.adminId) {
             localStorage.setItem(KEYS.SHOP_ID, String(response.data.adminId));
           }
         } else {
           setAppEnabled(false);
+          localStorage.setItem("app_status_enabled", "false");
+          localStorage.setItem("app_status_validated_at", String(now));
         }
       } catch (err) {
         console.error("App status check failed:", err?.message || err);

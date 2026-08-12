@@ -1,0 +1,45 @@
+/* Consultant Grid Layout */
+
+.consultant-grid-wrapper {
+  padding: var(--store-space-4);
+  width: 100%;
+  max-width: var(--store-content-width);
+  margin: 0 auto;
+}
+
+.consultant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--store-space-4);
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .consultant-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--store-space-3);
+  }
+}
+
+@media (max-width: 768px) {
+  .consultant-grid-wrapper {
+    padding: var(--store-space-3);
+  }
+
+  .consultant-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--store-space-3);
+  }
+}
+
+@media (max-width: 480px) {
+  .consultant-grid-wrapper {
+    padding: var(--store-space-2);
+  }
+
+  .consultant-grid {
+    grid-template-columns: 1fr;
+    gap: var(--store-space-3);
+  }
+}

@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 const { connectDB } = require("./Utils/db");
 const { corsOptions } = require("./config/corsConfig");
 dotenv.config();
-connectDB();
+// connectDB();
 const path = require("path");
 const app = express();
 
@@ -84,12 +84,10 @@ const wixRoute = require("./Routes/wixRoute");
 const {wixStroeFrontRoute} = require("./Routes/wixStroeFrontRoute");
 
 app.use("/api/health", (req, res) => {
-
-  console.log("server is runing On ? ");
+  console.log("Health check endpoint called");
   res.status(200).json({
     success: true,
-    message: "Voucher bought successfully",
-
+    message: "Server is healthy",
   });
 });
 

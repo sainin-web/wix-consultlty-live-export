@@ -1,0 +1,194 @@
+/* Consultant Listing Page */
+
+.consultant-listing-main {
+  width: 100%;
+  background: var(--store-background);
+  min-height: 100vh;
+}
+
+.consultant-listing-container {
+  width: 100%;
+  max-width: var(--store-content-width);
+  margin: 0 auto;
+  padding: var(--store-space-5) var(--store-space-4);
+}
+
+/* Hero Section */
+.consultant-listing-hero {
+  text-align: center;
+  margin-bottom: var(--store-space-5);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.consultant-listing-hero h1 {
+  margin: 0 0 var(--store-space-2) 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--store-text);
+  line-height: 1.2;
+}
+
+.consultant-listing-hero p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--store-text-muted);
+  line-height: 1.5;
+}
+
+/* Section Header */
+.consultant-listing-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--store-space-4);
+  padding-bottom: var(--store-space-3);
+  border-bottom: 1px solid var(--store-border);
+}
+
+.consultant-listing-section-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--store-text);
+}
+
+.consultant-listing-count {
+  margin: 0;
+  font-size: 14px;
+  color: var(--store-text-muted);
+}
+
+/* Login Prompt Modal */
+.consultant-login-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: var(--store-space-3);
+}
+
+.consultant-login-prompt-dialog {
+  background: white;
+  border-radius: var(--store-radius-lg);
+  padding: var(--store-space-5);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.consultant-login-prompt-icon {
+  font-size: 40px;
+  margin-bottom: var(--store-space-3);
+  display: block;
+}
+
+.consultant-login-prompt-dialog h2 {
+  margin: 0 0 var(--store-space-1) 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--store-text);
+}
+
+.consultant-login-prompt-dialog p {
+  margin: 0 0 var(--store-space-4) 0;
+  font-size: 14px;
+  color: var(--store-text-muted);
+  line-height: 1.5;
+}
+
+.consultant-login-prompt-actions {
+  display: flex;
+  gap: var(--store-space-2);
+  justify-content: center;
+}
+
+.consultant-login-prompt-button {
+  padding: 10px 24px;
+  border-radius: var(--store-radius-sm);
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.consultant-login-prompt-primary {
+  background: var(--store-primary);
+  color: white;
+}
+
+.consultant-login-prompt-primary:hover {
+  background: var(--store-secondary);
+}
+
+.consultant-login-prompt-secondary {
+  background: var(--store-surface);
+  color: var(--store-text);
+  border: 1px solid var(--store-border);
+}
+
+.consultant-login-prompt-secondary:hover {
+  background: var(--store-background);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .consultant-listing-container {
+    padding: var(--store-space-4) var(--store-space-3);
+  }
+
+  .consultant-listing-hero {
+    margin-bottom: var(--store-space-4);
+  }
+
+  .consultant-listing-hero h1 {
+    font-size: 24px;
+  }
+
+  .consultant-listing-hero p {
+    font-size: 14px;
+  }
+
+  .consultant-listing-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--store-space-1);
+  }
+
+  .consultant-login-prompt-dialog {
+    padding: var(--store-space-4);
+  }
+
+  .consultant-login-prompt-actions {
+    flex-direction: column;
+  }
+
+  .consultant-login-prompt-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .consultant-listing-container {
+    padding: var(--store-space-3) var(--store-space-2);
+  }
+
+  .consultant-listing-hero h1 {
+    font-size: 20px;
+  }
+
+  .consultant-listing-hero p {
+    font-size: 13px;
+  }
+
+  .consultant-listing-section-header h2 {
+    font-size: 18px;
+  }
+}

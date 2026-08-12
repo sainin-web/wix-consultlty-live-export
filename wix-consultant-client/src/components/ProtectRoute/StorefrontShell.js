@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
 import WixInstanceGuard from "./WixInstanceGuard";
 import ProtectStoreFront from "./ProtectStoreFront";
-import StorefrontNavbar from "../Navbar/StorefrontNavbar";
 
 /**
- * Wix storefront iframe routes: instance guard + app-enabled check + navbar shell.
+ * Wix storefront shell: instance guard + app-enabled check.
+ * Does NOT include navigation header (Wix owns website navigation).
  * Uses Outlet so nested consultant-dashboard routes render correctly.
  */
 export default function StorefrontShell({
@@ -15,7 +15,6 @@ export default function StorefrontShell({
     <WixInstanceGuard>
       <ProtectStoreFront>
         <div className={className}>
-          <StorefrontNavbar />
           {children || <Outlet />}
         </div>
       </ProtectStoreFront>

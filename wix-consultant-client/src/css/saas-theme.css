@@ -40,6 +40,28 @@
   --saas-shadow-primary: 0 6px 16px -3px rgba(91, 92, 235, 0.4);
   --saas-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Storefront theme tokens (customizable) */
+  --store-primary: #5b5ceb;
+  --store-secondary: #7c3aed;
+  --store-background: #ffffff;
+  --store-surface: #f9f9f9;
+  --store-text: #111827;
+  --store-text-muted: #6b7280;
+  --store-border: #e5e7eb;
+  --store-success: #22c55e;
+  --store-error: #ef4444;
+  --store-radius-sm: 6px;
+  --store-radius-md: 8px;
+  --store-radius-lg: 12px;
+  --store-space-1: 8px;
+  --store-space-2: 12px;
+  --store-space-3: 16px;
+  --store-space-4: 24px;
+  --store-space-5: 32px;
+  --store-content-width: 1200px;
+  --store-shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.04), 0 2px 8px rgba(17, 24, 39, 0.05);
+  --store-shadow-md: 0 4px 6px -1px rgba(17, 24, 39, 0.05), 0 10px 24px -4px rgba(17, 24, 39, 0.08);
+
   /* Re-map Polaris brand tokens to the Consultly palette */
   --p-color-bg-fill-brand: var(--saas-primary);
   --p-color-bg-fill-brand-hover: var(--saas-primary-dark);

@@ -32,8 +32,8 @@
   const ConsultantList = lazy(() => import("./pages/ConsultantList"));
   const AddConsultant = lazy(() => import("./pages/AddConsultant"));
   const Faq = lazy(() => import("./pages/Faq"));
-  const ConsultantCards = lazy(
-    () => import("./components/ConsultantCards/ConsultantCards"),
+  const ConsultantListing = lazy(
+    () => import("./components/ConsultantCards/ConsultantListing"),
   );
   const ViewProfile = lazy(
     () => import("./components/ConsultantCards/ViewProfile"),
@@ -41,10 +41,12 @@
   const TabNavigation = lazy(
     () => import("./components/ConsultantDashboard/TabNavigation"),
   );
-  const VideoCallingPage = lazy(
-    () => import("./components/ConsultantDashboard/VideoCallingPage"),
+  const VideoCallingWrapper = lazy(
+    () => import("./components/Video/VideoCallingWrapper"),
   );
-  const UserChat = lazy(() => import("./components/ClientDashbord/UserChat"));
+  const ChatPageWrapper = lazy(
+    () => import("./components/Chat/ChatPageWrapper"),
+  );
   const LoginForm = lazy(
     () => import("./components/ConsultantDashboard/LoginForm"),
   );
@@ -256,18 +258,11 @@
             <Route path="/error" element={<ErrorPage />} />
             <Route
               path="/video/calling/page"
-              element={
-                // <StorefrontShell className="iframe-page-shell">
-                  <VideoCallingPage />
-              }
+              element={<VideoCallingWrapper />}
             />
             <Route
               path="/chats/:id"
-              element={
-                // <StorefrontShell className="iframe-page-shell chat-route-shell">
-                  <UserChat />
-                // </StorefrontShell>
-              }
+              element={<ChatPageWrapper />}
             />
             <Route path="/fcm-token" element={<FcmTokenWindow />} />
             <Route path="/push-call-incoming" element={<PushCallIncoming />} />
@@ -319,7 +314,7 @@
               path="/consultant/card"
               element={
                 <StorefrontShell>
-                  <ConsultantCards />
+                  <ConsultantListing />
                 </StorefrontShell>
               }
             />
