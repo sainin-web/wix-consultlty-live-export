@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 const { connectDB } = require("./Utils/db");
 const { corsOptions } = require("./config/corsConfig");
 dotenv.config();
-// connectDB();
+connectDB();
 const path = require("path");
 const app = express();
 
