@@ -268,10 +268,10 @@
             <Route path="/push-call-incoming" element={<PushCallIncoming />} />
 
             {/* ── Root redirects ── */}
-            <Route path="/" element={<Navigate to={`/admin${q}`} replace />} />
+            <Route path="/" element={<Navigate to={`/consultant/card${q}`} replace />} />
             <Route
               path="/dashboard"
-              element={<Navigate to={`/admin${q}`} replace />}
+              element={<Navigate to={`/consultant/card${q}`} replace />}
             />
 
             {/* ── Admin — Wix protected ── */}

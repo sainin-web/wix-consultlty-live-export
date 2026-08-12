@@ -91,12 +91,12 @@ const wixWebhookController = async (req, res) => {
       case "wix.app_management.apps.app_instance.v1.app_instance_installed":
       case "AppInstalled": {
         console.log("📦 App Installed:", instanceId);
-        // await handleWixInstall({
-        //   instanceId,
-        //   appDefId: eventData.appId || appDefId,
-        //   siteOwnerId,
-        //   siteMemberId,
-        // });
+        await handleWixInstall({
+          instanceId,
+          appDefId: eventData.appId || appDefId,
+          siteOwnerId,
+          siteMemberId,
+        });
         console.log("✅ Install handled via webhook");
         break;
       }
