@@ -6,6 +6,7 @@ const WIX_ORIGIN_PATTERNS = [
   /^https:\/\/[^/]+\.wixsite\.com$/i,
   /^https:\/\/[^/]+\.wix-dev-sites\.org$/i,
   /^https:\/\/[^/]+\.wix-development-sites\.org$/i,
+  /^https:\/\/[^/]+\.wix-dev-center-test\.org$/i,
   /^https:\/\/[^/]+\.wixstudio\.com$/i,
   /^https:\/\/[^/]+\.wixstudio\.io$/i,
   /^https:\/\/manage\.wix\.com$/i,
