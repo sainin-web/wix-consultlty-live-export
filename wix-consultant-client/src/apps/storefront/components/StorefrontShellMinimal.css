@@ -1,0 +1,69 @@
+/**
+ * Storefront Shell Minimal Styles
+ */
+
+.storefront-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.storefront-main {
+  width: 100%;
+  min-height: 400px;
+}
+
+/* Loading State */
+.storefront-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+/* Error State */
+.storefront-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.storefront-error h2 {
+  color: #cc0000;
+  margin-bottom: 12px;
+}
+
+.storefront-error p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .storefront-container {
+    padding: 0 12px;
+  }
+
+  .storefront-main {
+    min-height: 300px;
+  }
+}

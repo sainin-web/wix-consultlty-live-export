@@ -1,0 +1,196 @@
+/**
+ * Consultant Card Styles
+ */
+
+.consultant-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  height: 100%;
+}
+
+.consultant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: #0066cc;
+  transform: translateY(-2px);
+}
+
+/* Image Wrapper */
+.consultant-card-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+.consultant-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.consultant-card-image.loaded {
+  opacity: 1;
+}
+
+.consultant-card-image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Online Badge */
+.consultant-online-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #22c55e;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Info Section */
+.consultant-card-info {
+  padding: 16px;
+  flex: 1;
+}
+
+.consultant-card-name {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.consultant-card-profession {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.consultant-card-experience {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #999;
+}
+
+/* Languages */
+.consultant-card-languages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.language-badge {
+  display: inline-block;
+  background-color: #f0f0f0;
+  color: #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Pricing Section */
+.consultant-card-pricing {
+  padding: 12px 16px;
+  background-color: #f9f9f9;
+  border-top: 1px solid #f0f0f0;
+}
+
+.pricing-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 0;
+  color: #666;
+}
+
+.pricing-row strong {
+  color: #333;
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.consultant-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.consultant-card-actions button {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.consultant-card-actions button:first-child {
+  flex: 1.2;
+}
+
+.consultant-card-actions button:hover {
+  background-color: #f5f5f5;
+  border-color: #0066cc;
+  color: #0066cc;
+}
+
+.consultant-card-actions button:active {
+  transform: scale(0.98);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .consultant-card-actions {
+    flex-direction: column;
+  }
+
+  .consultant-card-actions button {
+    flex: auto;
+    width: 100%;
+  }
+
+  .consultant-card-actions button:first-child {
+    flex: auto;
+    width: 100%;
+  }
+}

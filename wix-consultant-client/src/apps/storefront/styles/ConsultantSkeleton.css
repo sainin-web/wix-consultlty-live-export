@@ -1,0 +1,133 @@
+/**
+ * Consultant Skeleton Loading Styles
+ */
+
+.consultant-skeleton {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+  animation: pulse-skeleton 1.5s infinite ease-in-out;
+}
+
+/* Image Skeleton */
+.skeleton-image {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+/* Info Skeleton */
+.skeleton-info {
+  padding: 16px;
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  animation: pulse 2s infinite;
+}
+
+.skeleton-name {
+  width: 80%;
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-profession {
+  width: 60%;
+  height: 12px;
+  margin-bottom: 8px;
+}
+
+.skeleton-experience {
+  width: 50%;
+  height: 12px;
+  margin-bottom: 12px;
+}
+
+/* Languages Skeleton */
+.skeleton-languages {
+  display: flex;
+  gap: 6px;
+}
+
+.skeleton-badge {
+  width: 60px;
+  height: 20px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  animation: pulse 2s infinite;
+}
+
+/* Pricing Skeleton */
+.skeleton-pricing {
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border-top: 1px solid #f0f0f0;
+}
+
+.skeleton-price-row {
+  height: 12px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  animation: pulse 2s infinite;
+  width: 70%;
+}
+
+/* Buttons Skeleton */
+.skeleton-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.skeleton-button {
+  flex: 1;
+  height: 32px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulse-skeleton {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}

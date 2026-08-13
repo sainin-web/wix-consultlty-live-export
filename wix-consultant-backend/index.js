@@ -82,6 +82,7 @@ const { adminRoute } = require("./Routes/adminRoute");
 const { wixInstallectionRoute } = require("./Routes/wixInstallectionRoute");
 const wixRoute = require("./Routes/wixRoute");
 const {wixStroeFrontRoute} = require("./Routes/wixStroeFrontRoute");
+const { storefrontRoute } = require("./Routes/storefrontRoute");
 
 app.use("/api/health", (req, res) => {
   console.log("Health check endpoint called");
@@ -98,6 +99,7 @@ app.use("/api/api-consultant", consultantRoute);
 app.use("/api", wixInstallectionRoute);
 app.use("/api", wixRoute)
 app.use("/api", wixStroeFrontRoute)
+app.use("/api/storefront", storefrontRoute);
 // /** Shopify Routes */
 // app.use("/app", shopifyRoute);
 // app.use("/apps", shopifyRoute);

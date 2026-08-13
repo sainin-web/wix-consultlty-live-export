@@ -1,0 +1,33 @@
+/**
+ * Consultant Listing Grid Styles
+ */
+
+.consultant-listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 1024px) {
+  .consultant-listing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .consultant-listing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .consultant-listing-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
