@@ -44,6 +44,7 @@ function ConsultantListing() {
   }, []);
 
   // Load consultants and vouchers in parallel on mount (with cache check)
+  // Only fetch once when component mounts
   useEffect(() => {
     if (!instance || !shop_id) return;
 
@@ -53,13 +54,19 @@ function ConsultantListing() {
     const dispatchActions = [];
 
     if (!consultants?.findConsultant || consultants.findConsultant.length === 0) {
+      console.log("[STOREFRONT] Fetching consultants for shop:", shop_id);
       dispatchActions.push(
         dispatch(fetchConsultants({ adminIdLocal: shop_id, instance }))
       );
+    } else {
+      console.log("[STOREFRONT] Using cached consultants:", consultants.findConsultant.length);
     }
 
     if (!voucherData) {
+      console.log("[STOREFRONT] Fetching voucher data for shop:", shop_id);
       dispatchActions.push(dispatch(fetchVoucherData(shop_id)));
+    } else {
+      console.log("[STOREFRONT] Using cached voucher data");
     }
 
     // Only use Promise.all if we have actions to dispatch
@@ -69,7 +76,7 @@ function ConsultantListing() {
         perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
       });
     }
-  }, [dispatch, instance, shop_id, consultants, voucherData]);
+  }, []); // CRITICAL FIX: Empty dependency array - fetch ONLY ONCE on mount
 
   // Map consultants with proper data handling
   const mappedConsultants = React.useMemo(() => {

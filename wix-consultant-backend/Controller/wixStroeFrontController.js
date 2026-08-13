@@ -12,7 +12,11 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     const authHeader = req.headers.authorization;
     const instance = authHeader?.split(" ")[1];
 
+    console.log("[DEBUG] authHeader:", authHeader ? "present" : "missing");
+    console.log("[DEBUG] instance:", instance ? instance.substring(0, 20) + "..." : "missing");
+
     if (!instance) {
+      console.log("[ERROR] No instance in auth header");
       return res.status(401).json({
         success: false,
         message: "No instance provided",
@@ -22,35 +26,40 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     t('instance-extracted');
 
     // Lookup shop by instanceId — must be indexed
+    console.log("[DEBUG] Looking up shop with instanceId:", instance.substring(0, 20) + "...");
     const findAdmin = await shopModel.findOne({
       instanceId: instance,
     }).lean().select("_id");
 
     t('shop-lookup');
+    console.log("[DEBUG] Shop lookup result:", findAdmin ? "found" : "NOT FOUND");
 
     if (!findAdmin) {
+      console.log("[ERROR] Shop not found for instance:", instance.substring(0, 20) + "...");
       return res.status(401).json({
         success: false,
-        message: "Unauthorized",
+        message: "Unauthorized - shop not found",
       });
     }
 
     const shop_id = findAdmin._id;
+    console.log("[DEBUG] shop_id:", shop_id);
 
     // Pagination parameters
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(24, parseInt(req.query.limit) || 12); // Max 24 per page
+    const limit = Math.min(24, parseInt(req.query.limit) || 12);
     const skip = (page - 1) * limit;
 
     t('pagination-setup');
 
-    // Optimized query: only fetch required fields for storefront cards
-    // Use .lean() to get plain objects instead of Mongoose documents
+    // Query consultants with detailed logging
+    console.log("[DEBUG] Querying consultants with:", { shop_id: shop_id.toString(), userType: "consultant", isActive: true });
+
     const [consultants, totalCount] = await Promise.all([
       User.find({
         userType: "consultant",
-        shop_id: shop_id,
-        isActive: true, // Only show active consultants
+        shop_id: shop_id.toString(),
+        isActive: true,
       })
         .select("_id fullname profession profileImage experience language chatPerMinute voicePerMinute videoPerMinute")
         .lean()
@@ -59,12 +68,13 @@ const getAllConsultantWixStoreFront = async (req, res) => {
         .exec(),
       User.countDocuments({
         userType: "consultant",
-        shop_id: shop_id,
+        shop_id: shop_id.toString(),
         isActive: true,
       })
     ]);
 
     t('consultant-query-complete');
+    console.log("[DEBUG] Query results - found:", consultants.length, "total:", totalCount);
 
     // Transform to response format
     const hostBase = `${req.protocol}://${req.get("host")}`;
@@ -87,6 +97,8 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     const hasNextPage = skip + limit < totalCount;
     const totalPages = Math.ceil(totalCount / limit);
 
+    console.log("[SUCCESS] Returning", formattedConsultants.length, "consultants for shop:", shop_id);
+
     return res.status(200).json({
       success: true,
       findConsultant: formattedConsultants,
@@ -99,7 +111,8 @@ const getAllConsultantWixStoreFront = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("[ERROR] getAllConsultantWixStoreFront:", error);
+    console.error("[ERROR] getAllConsultantWixStoreFront:", error.message);
+    console.error("[ERROR] Stack:", error.stack);
 
     res.status(500).json({
       success: false,
