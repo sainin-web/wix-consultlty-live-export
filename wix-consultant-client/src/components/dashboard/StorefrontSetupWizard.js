@@ -96,18 +96,30 @@ export function StorefrontSetupWizard({ consultantCount = 0 }) {
     setFallbackMode(false);
     try {
       const token = await getWixAdminToken();
+      console.log("🔗 Requesting editor deep link for adminId:", adminId);
       const { data } = await axios.post(
         `${BACKEND}/api/onboarding/editor-deep-link/${adminId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
+      console.log("📥 Deep link response:", data);
       if (data?.success && data.url) {
-        window.open(data.url, "_blank", "noopener");
-        setEditorOpened(true);
+        console.log("✅ Opening editor URL:", data.url);
+        const opened = window.open(data.url, "_blank", "noopener");
+        if (!opened) {
+          console.warn("⚠️ Pop-up blocked! Using fallback.");
+          alert("Pop-up was blocked by browser. Using manual setup instructions.");
+          setFallbackMode(true);
+        } else {
+          setEditorOpened(true);
+        }
       } else {
+        console.warn("⚠️ No URL in response, using fallback:", data);
         setFallbackMode(true);
       }
     } catch (err) {
+      console.error("❌ Editor deep link error:", err.response?.data || err.message);
+      alert(`Error: ${err.response?.data?.message || err.message || "Unable to open editor"}`);
       setFallbackMode(true);
     } finally {
       setConnecting(false);

@@ -89,16 +89,21 @@ const getStorefrontStatus = async (req, res) => {
  */
 const createEditorDeepLink = async (req, res) => {
   try {
+    console.log("🔗 createEditorDeepLink called for adminId:", req.params.adminId);
     const shop = await findShopByAdminId(req.params.adminId);
     if (!shop) {
+      console.error("❌ Shop not found for adminId:", req.params.adminId);
       return res
         .status(404)
         .json({ success: false, message: "Shop not found" });
     }
 
+    console.log("✅ Found shop:", shop.instanceId);
     // Reuse existing install/token logic — refreshes only when near expiry
     const freshShop = await handleWixInstall({ instanceId: shop.instanceId });
+    console.log("✅ Fresh shop access token obtained");
 
+    console.log("🔗 Calling Wix editor-deep-link API...");
     const wixRes = await axios.post(
       "https://www.wixapis.com/apps/v1/post-installation/editor-deep-link",
       {},
@@ -111,6 +116,7 @@ const createEditorDeepLink = async (req, res) => {
       },
     );
 
+    console.log("📥 Wix response:", wixRes.data);
     const url =
       wixRes.data?.url ||
       wixRes.data?.deepLink ||
@@ -118,7 +124,7 @@ const createEditorDeepLink = async (req, res) => {
       null;
 
     if (!url) {
-      console.error("editor-deep-link: unexpected response", wixRes.data);
+      console.error("❌ editor-deep-link: No URL in response", wixRes.data);
       return res.status(200).json({
         success: false,
         fallback: true,
@@ -126,6 +132,7 @@ const createEditorDeepLink = async (req, res) => {
       });
     }
 
+    console.log("✅ Deep link generated:", url.substring(0, 50) + "...");
     StorefrontStatus.findOneAndUpdate(
       { instanceId: shop.instanceId },
       { $set: { deepLinkGeneratedAt: new Date() } },
@@ -135,14 +142,20 @@ const createEditorDeepLink = async (req, res) => {
     return res.status(200).json({ success: true, url });
   } catch (error) {
     console.error(
-      "createEditorDeepLink error:",
+      "❌ createEditorDeepLink error:",
       error.response?.data || error.message,
     );
+    console.error("Error details:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      headers: error.response?.headers,
+    });
     // Beta API may be unavailable — tell the client to show the guided manual flow
     return res.status(200).json({
       success: false,
       fallback: true,
       message: "Automatic editor link unavailable",
+      errorDetail: error.message,
     });
   }
 };
