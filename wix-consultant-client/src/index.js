@@ -13,32 +13,38 @@ import en from "@shopify/polaris/locales/en.json";
 import { Provider } from "react-redux";
 import { BrowserRouter } from "react-router-dom";
 import { store } from "./components/Redux/store/store";
-import SocketProvider from "./components/Sokect-io/sokectProvider";
 import ToastProvider from "./components/AlertModel/ToastProvider";
 import { AppStatusProvider } from "./components/ProtectRoute/AppStatusProvider";
 import { WixUserProvider } from "./useContext/WixUserContext";
+import { perfMark } from "./utils/performanceMonitor";
 
 // ─── Shared React tree ───────────────────────────────────────────────────────
+// REMOVED: SocketProvider no longer wraps entire app
+// Socket is now lazy-loaded only when needed (Chat, Video, Consultant Dashboard)
+// This allows the storefront to render immediately without waiting for socket connection
+//
 // instanceId prop lets App.js receive the Wix instance without touching
 // localStorage (which may be the in-memory fallback in sandboxed iframes).
 function RootApp({ instanceId, embeddedInWidget = false }) {
+  React.useEffect(() => {
+    perfMark('root-app:mount');
+  }, []);
+
   return (
     <React.StrictMode>
       <PolarisAppProvider i18n={en}>
         <ToastProvider>
           <Provider store={store}>
-            <SocketProvider>
-              <BrowserRouter>
-                <AppStatusProvider>
-                  <WixUserProvider>
-                    <App
-                      instanceId={instanceId}
-                      embeddedInWidget={embeddedInWidget}
-                    />
-                  </WixUserProvider>
-                </AppStatusProvider>
-              </BrowserRouter>
-            </SocketProvider>
+            <BrowserRouter>
+              <AppStatusProvider>
+                <WixUserProvider>
+                  <App
+                    instanceId={instanceId}
+                    embeddedInWidget={embeddedInWidget}
+                  />
+                </WixUserProvider>
+              </AppStatusProvider>
+            </BrowserRouter>
           </Provider>
         </ToastProvider>
       </PolarisAppProvider>

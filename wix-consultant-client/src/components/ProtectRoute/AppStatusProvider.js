@@ -105,7 +105,14 @@ export const AppStatusProvider = ({ children }) => {
       }
     };
 
-    checkAppStatus();
+    // DO NOT BLOCK storefront rendering on app status check
+    // Set loading to false immediately for storefront to render
+    setLoading(false);
+
+    // Perform status check asynchronously in background
+    // This allows storefront to show immediately while status validates
+    setTimeout(checkAppStatus, 100);
+
     return () => {
       cancelled = true;
     };

@@ -177,6 +177,20 @@ const registerUserSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// ─── PERFORMANCE INDEXES ──────────────────────────────────────────────────────
+// Storefront consultant listing query: find consultants by shop_id + userType + isActive
+// Without this index, every storefront load would scan the entire User collection
+registerUserSchema.index({ shop_id: 1, userType: 1, isActive: 1 });
+
+// Email lookup (for authentication, duplicate check)
+registerUserSchema.index({ email: 1 });
+
+// Wix member lookup
+registerUserSchema.index({ wixMemberId: 1 });
+
+// Instance lookup (for Wix validation)
+registerUserSchema.index({ instanceId: 1 });
+
 // Model already exists check karo - duplicate model name se bachne ke liye
 const User =
   mongoose.models.ragisterUser ||

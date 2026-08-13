@@ -1,20 +1,35 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { perfMark, perfMeasure } from "../../../utils/performanceMonitor";
 
 // API call using createAsyncThunk
 
 export const fetchConsultants = createAsyncThunk(
   "consultants/fetch",
-  async ({  instance }) => {
+  async ({ instance, page = 1, limit = 12 }) => {
+    perfMark('api:consultant-fetch-start');
+
     const response = await axios.get(
       `${process.env.REACT_APP_BACKEND_HOST}/api/consultant/wix-store-front`,
       {
         headers: {
           Authorization: `Bearer ${instance || localStorage.getItem("wix_instance") || ""}`,
         },
+        params: {
+          page,
+          limit,
+        },
       },
     );
-    console.log("response", response);
+
+    perfMark('api:consultant-fetch-end');
+    perfMeasure('api:consultant-fetch-start', 'api:consultant-fetch-end');
+
+    console.log("[PERF] Consultant API response:", {
+      count: response.data?.findConsultant?.length,
+      pagination: response.data?.pagination,
+    });
+
     return response.data;
   },
 );

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchConsultants } from "../Redux/slices/ConsultantSlices";
 import { fetchVoucherData } from "../Redux/slices/UserSlices";
-import { ensureSocketRegistered, SOCKET_ROLE } from "../Sokect-io/SokectConfig";
 import { checkUserBalance, openCallPage } from "../middle-ware/OpenCallingPage";
 import { getCustomerId } from "../../utils/wixStorage";
 import { useWixUser } from "../../useContext/WixUserContext";
@@ -11,11 +10,17 @@ import { ConsultantGrid } from "./ConsultantGrid";
 import { LoadingState } from "./LoadingState";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
+import { perfMark, perfMeasure } from "../../utils/performanceMonitor";
 import "./ConsultantListing.css";
 
 /**
  * Professional consultant marketplace listing.
  * Handles data fetching, caching, and state management.
+ *
+ * PERF OPTIMIZATION:
+ * - Renders skeleton immediately (does not wait for API)
+ * - Socket is NOT initialized for storefront (only for chat/calls)
+ * - Uses Redux cache to prevent duplicate API calls
  */
 function ConsultantListing() {
   const dispatch = useDispatch();
@@ -33,9 +38,16 @@ function ConsultantListing() {
 
   const [loginPrompt, setLoginPrompt] = useState(false);
 
+  // Mark storefront component mount
+  useEffect(() => {
+    perfMark('storefront:mount');
+  }, []);
+
   // Load consultants and vouchers in parallel on mount (with cache check)
   useEffect(() => {
     if (!instance || !shop_id) return;
+
+    perfMark('storefront:fetch-start');
 
     // Only fetch if data is not already in Redux
     const dispatchActions = [];
@@ -52,15 +64,12 @@ function ConsultantListing() {
 
     // Only use Promise.all if we have actions to dispatch
     if (dispatchActions.length > 0) {
-      Promise.all(dispatchActions);
+      Promise.all(dispatchActions).then(() => {
+        perfMark('storefront:fetch-end');
+        perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
+      });
     }
   }, [dispatch, instance, shop_id, consultants, voucherData]);
-
-  // Register socket only once for this user
-  useEffect(() => {
-    if (!userId) return;
-    ensureSocketRegistered(userId, { role: SOCKET_ROLE.CUSTOMER });
-  }, [userId]);
 
   // Map consultants with proper data handling
   const mappedConsultants = React.useMemo(() => {

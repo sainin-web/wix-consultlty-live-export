@@ -4,18 +4,29 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 
 const getAllConsultantWixStoreFront = async (req, res) => {
+  const startTime = Date.now();
+  const t = (label) => console.log(`[PERF][BACKEND] ${label}: ${Date.now() - startTime}ms`);
+
   try {
+    t('start');
     const authHeader = req.headers.authorization;
-
-    console.log("authHeader", authHeader);
-
     const instance = authHeader?.split(" ")[1];
 
-    console.log("instance", instance);
+    if (!instance) {
+      return res.status(401).json({
+        success: false,
+        message: "No instance provided",
+      });
+    }
 
+    t('instance-extracted');
+
+    // Lookup shop by instanceId — must be indexed
     const findAdmin = await shopModel.findOne({
       instanceId: instance,
-    });
+    }).lean().select("_id");
+
+    t('shop-lookup');
 
     if (!findAdmin) {
       return res.status(401).json({
@@ -26,30 +37,73 @@ const getAllConsultantWixStoreFront = async (req, res) => {
 
     const shop_id = findAdmin._id;
 
-    let consultants = await User.find({
-      userType: "consultant",
-      shop_id: shop_id,
-    }).select("-password");
+    // Pagination parameters
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(24, parseInt(req.query.limit) || 12); // Max 24 per page
+    const skip = (page - 1) * limit;
 
-    consultants = consultants.map((item) => {
-      return {
-        ...item._doc,
-        profileImage: item.profileImage
-          ? `${req.protocol}://${req.get("host")}/${item.profileImage.replace(/\\/g, "/")}`
-          : null,
-      };
-    });
+    t('pagination-setup');
 
-    return res.status(200).send({
+    // Optimized query: only fetch required fields for storefront cards
+    // Use .lean() to get plain objects instead of Mongoose documents
+    const [consultants, totalCount] = await Promise.all([
+      User.find({
+        userType: "consultant",
+        shop_id: shop_id,
+        isActive: true, // Only show active consultants
+      })
+        .select("_id fullname profession profileImage experience language chatPerMinute voicePerMinute videoPerMinute")
+        .lean()
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      User.countDocuments({
+        userType: "consultant",
+        shop_id: shop_id,
+        isActive: true,
+      })
+    ]);
+
+    t('consultant-query-complete');
+
+    // Transform to response format
+    const hostBase = `${req.protocol}://${req.get("host")}`;
+    const formattedConsultants = consultants.map((item) => ({
+      _id: item._id,
+      fullname: item.fullname,
+      profession: item.profession,
+      experience: item.experience,
+      language: item.language,
+      chatPerMinute: item.chatPerMinute,
+      voicePerMinute: item.voicePerMinute,
+      videoPerMinute: item.videoPerMinute,
+      profileImage: item.profileImage
+        ? `${hostBase}/${item.profileImage.replace(/\\/g, "/")}`
+        : null,
+    }));
+
+    t('transform-complete');
+
+    const hasNextPage = skip + limit < totalCount;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return res.status(200).json({
       success: true,
-      findConsultant: consultants,
+      findConsultant: formattedConsultants,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasNextPage,
+      },
     });
   } catch (error) {
-    console.log(error);
+    console.error("[ERROR] getAllConsultantWixStoreFront:", error);
 
-    res.status(500).send({
+    res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Server error",
     });
   }
 };
