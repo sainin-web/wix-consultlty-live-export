@@ -1,0 +1,78 @@
+/**
+ * Customer Sidebar Styles
+ */
+
+.customer-sidebar {
+  width: 250px;
+  background: #1a1a1a;
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+}
+
+.customer-sidebar-header {
+  margin-bottom: 30px;
+}
+
+.customer-sidebar-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.customer-sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-link {
+  padding: 12px 16px;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: block;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.sidebar-link:hover {
+  background-color: #333;
+}
+
+.sidebar-link.active {
+  background-color: #0066cc;
+  font-weight: 600;
+}
+
+.customer-sidebar-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+}
+
+.logout-btn {
+  width: 100%;
+  background-color: #cc0000;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background-color: #990000;
+}

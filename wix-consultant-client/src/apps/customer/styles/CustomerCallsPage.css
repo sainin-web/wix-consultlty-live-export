@@ -1,0 +1,70 @@
+/**
+ * Calls Page Styles
+ */
+
+.calls-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.call-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.call-info h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  color: #333;
+}
+
+.call-type {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #0066cc;
+  font-weight: 600;
+}
+
+.call-time {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #666;
+}
+
+.call-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: #0066cc;
+  color: white;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.btn-secondary {
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.empty-state {
+  background: white;
+  padding: 60px 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: #999;
+}
+
+.empty-state p {
+  margin: 0 0 20px;
+}

@@ -1,0 +1,66 @@
+/**
+ * Calls Page Styles
+ */
+
+.calls-container {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.calls-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calls-table thead {
+  background-color: #f5f5f5;
+}
+
+.calls-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #666;
+  font-size: 13px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #ddd;
+}
+
+.calls-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #f0f0f0;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: capitalize;
+}
+
+.type-badge.call {
+  background-color: #e0f0ff;
+  color: #0066cc;
+}
+
+.type-badge.chat {
+  background-color: #e0ffe0;
+  color: #009900;
+}
+
+.type-badge.video {
+  background-color: #ffe0e0;
+  color: #cc0000;
+}
+
+.amount {
+  font-weight: 600;
+  color: #0066cc;
+}

@@ -1,0 +1,64 @@
+/**
+ * Transactions Page Styles
+ */
+
+.transactions-container {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transactions-table thead {
+  background-color: #f5f5f5;
+}
+
+.transactions-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #666;
+  font-size: 13px;
+  border-bottom: 2px solid #ddd;
+}
+
+.transactions-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.type-badge.debit {
+  background-color: #ffe0e0;
+  color: #cc0000;
+}
+
+.type-badge.credit {
+  background-color: #e0ffe0;
+  color: #009900;
+}
+
+.amount {
+  font-weight: 600;
+}
+
+.amount.debit {
+  color: #cc0000;
+}
+
+.amount.credit {
+  color: #009900;
+}
