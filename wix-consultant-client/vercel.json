@@ -1,0 +1,74 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/apps/storefront/**",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build/storefront"
+      }
+    },
+    {
+      "src": "src/apps/consultant/**",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build/consultant"
+      }
+    },
+    {
+      "src": "src/apps/customer/**",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build/customer"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/storefront/(.*)",
+      "dest": "/build/storefront/$1",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/consultant/(.*)",
+      "dest": "/build/consultant/$1",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/customer/(.*)",
+      "dest": "/build/customer/$1",
+      "methods": ["GET"]
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "REACT_APP_BACKEND_HOST": "@react_app_backend_host",
+    "REACT_APP_FRONTEND_URL": "@react_app_frontend_url",
+    "REACT_APP_WIX_DOMAIN": "@react_app_wix_domain",
+    "REACT_APP_FIREBASE_API_KEY": "@react_app_firebase_api_key",
+    "REACT_APP_FIREBASE_AUTH_DOMAIN": "@react_app_firebase_auth_domain",
+    "REACT_APP_FIREBASE_PROJECT_ID": "@react_app_firebase_project_id",
+    "REACT_APP_FIREBASE_STORAGE_BUCKET": "@react_app_firebase_storage_bucket",
+    "REACT_APP_FIREBASE_MESSAGING_SENDER_ID": "@react_app_firebase_messaging_sender_id",
+    "REACT_APP_FIREBASE_APP_ID": "@react_app_firebase_app_id",
+    "REACT_APP_AGORA_APP_ID": "@react_app_agora_app_id"
+  }
+}

@@ -38,7 +38,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "build:storefront": "REACT_APP_BUILD_TARGET=storefront PUBLIC_URL=/ react-scripts build",
+    "build:consultant": "REACT_APP_BUILD_TARGET=consultant PUBLIC_URL=/ react-scripts build",
+    "build:customer": "REACT_APP_BUILD_TARGET=customer PUBLIC_URL=/ react-scripts build",
+    "build:all": "npm run build:storefront && npm run build:consultant && npm run build:customer"
   },
   "eslintConfig": {
     "extends": [
