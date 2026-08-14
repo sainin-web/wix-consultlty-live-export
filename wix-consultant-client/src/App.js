@@ -171,21 +171,31 @@
         localStorage.getItem("wix_instance");
       const q = instance ? `?instance=${instance}` : "";
 
+      // DEBUG
+      console.log("[Auth Guard]", {
+        isLoggedIn,
+        hasToken: !!token,
+        currentPath,
+        instance,
+      });
+
       // Already logged in → skip login page
       if (isLoggedIn === "true" && token && currentPath === "/login") {
+        console.log("[Auth Guard] Logged in user on login page → redirect to dashboard");
         navigate(`/consultant-dashboard${q}`, { replace: true });
         return;
       }
 
-      // Not logged in → block dashboard
+      // Not logged in → block dashboard (IMPORTANT: Full-screen, no Wix frame)
       if (
         (!isLoggedIn || !token) &&
         currentPath.startsWith("/consultant-dashboard")
       ) {
+        console.log("[Auth Guard] Not logged in but accessing dashboard → redirect to login");
         navigate(`/login${q}`, { replace: true });
         return;
       }
-    }, [location.pathname]);
+    }, [location.pathname, navigate]);
 
     const instance = searchParams.get("instance");
     const q = instance ? `?instance=${instance}` : "";
@@ -351,13 +361,10 @@
               <Route path="call-chat-logs" element={<CallLogsConsultant />} />
             </Route>
 
+            {/* ── CONSULTANT DASHBOARD — Full Screen (NO WIX HEADER/FOOTER) ── */}
             <Route
               path="/consultant-dashboard"
-              element={
-                <StorefrontShell className="iframe-page-shell consultant-dashboard-shell">
-                  <TabNavigation />
-                </StorefrontShell>
-              }
+              element={<TabNavigation />}
             >
               <Route index element={<DashboardPage />} />
               <Route path="chats/:chatId?" element={<ChatsPage />} />
