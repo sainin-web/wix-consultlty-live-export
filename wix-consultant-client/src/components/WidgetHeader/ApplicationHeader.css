@@ -1,0 +1,208 @@
+/**
+ * Application Header Styles
+ * Professional marketplace header inside Wix widget
+ */
+
+.application-header {
+  background: linear-gradient(135deg, #f5f7fa 0%, #f8fafc 100%);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0;
+  margin: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-header-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+}
+
+.app-header-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.header-nav-item {
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-nav-item:hover {
+  background-color: rgba(71, 85, 105, 0.1);
+  color: #1e293b;
+}
+
+.header-nav-item.active {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.header-nav-item-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.header-nav-item.header-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 10px 24px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.header-nav-item.header-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+.header-nav-logout {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.header-nav-logout:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #475569;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .app-header-container {
+    padding: 0 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .app-header-nav {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .header-nav-item {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .header-nav-item-group {
+    margin-left: 0;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .header-nav-item.header-primary {
+    flex-grow: 1;
+  }
+
+  .header-nav-logout {
+    flex-grow: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .application-header {
+    padding: 8px 0;
+  }
+
+  .app-header-container {
+    padding: 0 8px;
+    min-height: 50px;
+  }
+
+  .app-header-nav {
+    gap: 4px;
+  }
+
+  .header-nav-item {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .header-nav-item span {
+    display: none;
+  }
+
+  .header-nav-item::before {
+    content: attr(data-icon);
+  }
+
+  .header-nav-item-group {
+    width: 100%;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .application-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom-color: #334155;
+  }
+
+  .header-nav-item {
+    color: #cbd5e1;
+  }
+
+  .header-nav-item:hover {
+    background-color: rgba(203, 213, 225, 0.1);
+    color: #f1f5f9;
+  }
+
+  .header-nav-item.active {
+    background-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .header-nav-logout {
+    border-color: #475569;
+    color: #94a3b8;
+  }
+
+  .header-nav-logout:hover {
+    background-color: #1e293b;
+    border-color: #64748b;
+    color: #cbd5e1;
+  }
+}
+
+/* Wix embed adjustments */
+.wix-embed .application-header {
+  position: relative;
+  z-index: 10;
+}
+
+.wix-dashboard-mode .application-header {
+  display: none;
+}

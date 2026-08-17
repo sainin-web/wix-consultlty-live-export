@@ -27,6 +27,12 @@
   import StorefrontShell from "./components/ProtectRoute/StorefrontShell";
   import { persistCustomerId } from "./utils/wixStorage";
 
+  // ── Wix Integration ──
+  import ApplicationHeader from "./components/WidgetHeader/ApplicationHeader";
+  import { wixBridge } from "./integrations/wix/wixBridge";
+  import { widgetModeManager } from "./integrations/wix/wixWidgetModes";
+  import { useWixResize } from "./integrations/wix/wixResize";
+
   // ── Lazy pages ────────────────────────────────────────────────────────────────
   const Dashboard = lazy(() => import("./pages/Dashboard"));
   const ConsultantList = lazy(() => import("./pages/ConsultantList"));
@@ -88,6 +94,17 @@
     () => import("./pages/WixPaymentsPlaceholder"),
   );
 
+  // Lazy load auth screens
+  const ConsultantLoginPage = lazy(
+    () => import("./apps/consultant/pages/ConsultantLoginPage"),
+  );
+  const ConsultantDashboardPage = lazy(
+    () => import("./apps/consultant/pages/ConsultantDashboardPage"),
+  );
+  const CustomerProfilePage = lazy(
+    () => import("./apps/customer/pages/CustomerProfilePage"),
+  );
+
   // ── App ───────────────────────────────────────────────────────────────────────
   export default function App({
     instanceId: instanceFromWidget = "",
@@ -98,6 +115,38 @@
     const navigate = useNavigate();
     const location = useLocation();
     const [user, setUser] = useState();
+    const [isWidgetReady, setIsWidgetReady] = useState(false);
+
+    // ── Wix Integration Initialization ──
+    useEffect(() => {
+      // Initialize Wix bridge
+      wixBridge.notifyReady();
+      setIsWidgetReady(true);
+
+      // Trigger initial resize
+      if (window.self !== window.top) {
+        wixResizer.markAsWixEmbed();
+        wixResizer.start();
+      }
+
+      console.log('[App] Wix integration initialized');
+    }, []);
+
+    // ── Widget Mode Management ──
+    useEffect(() => {
+      const isConsultantLoggedIn = localStorage.getItem('consultant_logged_in') === 'true';
+      const isDashboard = location.pathname.startsWith('/consultant-dashboard');
+
+      if (isConsultantLoggedIn && isDashboard) {
+        widgetModeManager.setMode('dashboard');
+        wixBridge.requestDashboardMode();
+      } else {
+        widgetModeManager.setMode('storefront');
+        if (isConsultantLoggedIn) {
+          wixBridge.exitDashboardMode();
+        }
+      }
+    }, [location.pathname]);
 
     useEffect(() => {
       dispatch(verifyToken());
@@ -257,6 +306,12 @@
       <Fragment>
         <GlobalMessageNotification />
         <IncomingCallAlert />
+
+        {/* ── Application Header (inside widget) ── */}
+        {isWidgetReady && !location.pathname.startsWith('/admin') && (
+          <ApplicationHeader />
+        )}
+
         <Suspense fallback={<div className="loading-screen">Loading...</div>}>
           <Routes>
             {/* ── Public / utility ── */}
