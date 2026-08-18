@@ -23,6 +23,10 @@ dotenv.config();
  */
 
 const consultantController = async (req, res) => {
+  const apiStartTime = Date.now();
+  const dbStartTime = Date.now();
+  console.log(`[API] CREATE consultant START - shop_id: ${req.params.shop_id}`);
+
   try {
     const { shop_id } = req.params;
     const body = req.body;
@@ -161,7 +165,13 @@ const consultantController = async (req, res) => {
       chatPerMinute: body.chatPerMinute,
     });
 
+    const saveStartTime = Date.now();
     await consultantDetails.save();
+    const saveDuration = Date.now() - saveStartTime;
+    const totalDuration = Date.now() - apiStartTime;
+
+    console.log(`[DB] CREATE consultant - save: ${saveDuration}ms`);
+    console.log(`[API] CREATE consultant END - total: ${totalDuration}ms`);
 
     return res.status(201).json({
       success: true,
@@ -169,7 +179,14 @@ const consultantController = async (req, res) => {
       consultantId: consultantDetails._id,
     });
   } catch (error) {
-    console.error("Error in consultantController:", error);
+    const totalDuration = Date.now() - apiStartTime;
+    console.error(`[API] CREATE consultant ERROR (${totalDuration}ms):`, {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      causeName: error.cause?.name,
+      causeMessage: error.cause?.message,
+    });
 
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
@@ -254,6 +271,9 @@ const handleProfileImageAsync = (file) => {
 };
 
 const updateConsultantData = async (req, res) => {
+  const apiStartTime = Date.now();
+  console.log(`[API] UPDATE consultant START - id: ${req.params.id}`);
+
   try {
     const { id } = req.params;
     const body = req.body;
@@ -383,14 +403,27 @@ const updateConsultantData = async (req, res) => {
       updatedData.profileImage = imageURL;
     }
 
+    const updateStartTime = Date.now();
     await User.findByIdAndUpdate(id, updatedData, { new: true });
+    const updateDuration = Date.now() - updateStartTime;
+    const totalDuration = Date.now() - apiStartTime;
+
+    console.log(`[DB] UPDATE consultant - findByIdAndUpdate: ${updateDuration}ms`);
+    console.log(`[API] UPDATE consultant END - total: ${totalDuration}ms`);
 
     return res.status(200).json({
       success: true,
       message: "Consultant updated successfully",
     });
   } catch (error) {
-    console.error("Error in updateConsultantData:", error);
+    const totalDuration = Date.now() - apiStartTime;
+    console.error(`[API] UPDATE consultant ERROR (${totalDuration}ms):`, {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      causeName: error.cause?.name,
+      causeMessage: error.cause?.message,
+    });
 
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];

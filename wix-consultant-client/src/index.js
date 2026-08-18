@@ -1,10 +1,22 @@
+/**
+ * PUBLIC WIDGET ENTRY POINT
+ *
+ * This file is ONLY for the public Wix Widget Custom Element.
+ * It registers the <consultant-widget> custom element which loads the public app.
+ *
+ * IMPORTANT: This does NOT mount the admin dashboard.
+ * The admin dashboard has its own separate entry point (admin-index.js).
+ *
+ * Do NOT add admin routes or admin UI here.
+ */
+
 // FIX 1 — Must be first import: installs in-memory localStorage before
 // Agora SDK or any other module touches window.localStorage
 import "./localStoragePolyfill";
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
+import PublicWidget from "./PublicWidget";
 import "./index.css";
 import "@shopify/polaris/build/esm/styles.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -19,15 +31,9 @@ import { WixUserProvider } from "./useContext/WixUserContext";
 import { perfMark } from "./utils/performanceMonitor";
 
 // ─── Shared React tree ───────────────────────────────────────────────────────
-// REMOVED: SocketProvider no longer wraps entire app
-// Socket is now lazy-loaded only when needed (Chat, Video, Consultant Dashboard)
-// This allows the storefront to render immediately without waiting for socket connection
-//
-// instanceId prop lets App.js receive the Wix instance without touching
-// localStorage (which may be the in-memory fallback in sandboxed iframes).
 function RootApp({ instanceId, embeddedInWidget = false }) {
   React.useEffect(() => {
-    perfMark('root-app:mount');
+    perfMark('public-widget:mount');
   }, []);
 
   return (
@@ -38,7 +44,7 @@ function RootApp({ instanceId, embeddedInWidget = false }) {
             <BrowserRouter>
               <AppStatusProvider>
                 <WixUserProvider>
-                  <App
+                  <PublicWidget
                     instanceId={instanceId}
                     embeddedInWidget={embeddedInWidget}
                   />
@@ -52,16 +58,10 @@ function RootApp({ instanceId, embeddedInWidget = false }) {
   );
 }
 
-// ─── FIX 2 + 3 — Custom Element <consultant-widget instance="..."> ───────────
-//
-// FIX 2: tag name is "consultant-widget" — must match the Wix dashboard config.
-//        React mounts directly on the element (no Shadow DOM needed).
-//
-// FIX 3: observedAttributes + attributeChangedCallback handle the case where
-//        Wix sets the "instance" attribute AFTER connectedCallback fires
-//        (editorPointerAPI is empty on first render). A _mounted guard prevents
-//        double-mounting if the element is moved in the DOM.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── PUBLIC WIDGET CUSTOM ELEMENT ──────────────────────────────────────────
+// This is the ONLY entry point for the public Wix widget.
+// tag name: "consultant-widget"
+// Used by: Wix Site Widget (public storefront)
 class ConsultantWidget extends HTMLElement {
   static get observedAttributes() {
     return ["instance"];
@@ -71,11 +71,13 @@ class ConsultantWidget extends HTMLElement {
     if (this._mounted) return;
     this._mounted = true;
 
+    console.log("[🌐 PUBLIC WIDGET] Connected to DOM");
+
     const instanceId = this.getAttribute("instance") || "";
 
     if (!instanceId) {
       console.warn(
-        "[consultant-widget] connected without 'instance' — " +
+        "[🌐 PUBLIC WIDGET] connected without 'instance' — " +
         "will re-render when attributeChangedCallback fires."
       );
     }
@@ -105,7 +107,7 @@ class ConsultantWidget extends HTMLElement {
           detail: { height, selector: 'consultant-widget' }
         }));
 
-        console.log('[consultant-widget] Height update event dispatched:', height);
+        console.log('[🌐 PUBLIC WIDGET] Height update event dispatched:', height);
       }
     });
 
@@ -119,10 +121,10 @@ class ConsultantWidget extends HTMLElement {
               const { height } = JSON.parse(heightStr);
               if (height) {
                 this.style.minHeight = height + 'px';
-                console.log('[consultant-widget] Applied height from data attribute:', height);
+                console.log('[🌐 PUBLIC WIDGET] Applied height from data attribute:', height);
               }
             } catch (e) {
-              console.error('[consultant-widget] Failed to parse height:', e);
+              console.error('[🌐 PUBLIC WIDGET] Failed to parse height:', e);
             }
           }
         }
@@ -140,7 +142,7 @@ class ConsultantWidget extends HTMLElement {
     if (name !== "instance" || newVal === oldVal) return;
 
     console.info(
-      "[consultant-widget] instance updated →",
+      "[🌐 PUBLIC WIDGET] instance updated →",
       newVal ? newVal.slice(0, 20) + "…" : "(empty)"
     );
 
@@ -155,6 +157,7 @@ class ConsultantWidget extends HTMLElement {
       this._reactRoot = null;
     }
     this._mounted = false;
+    console.log("[🌐 PUBLIC WIDGET] Disconnected from DOM");
   }
 
   _doRender(instanceId) {
@@ -167,20 +170,7 @@ class ConsultantWidget extends HTMLElement {
 // Register only once — safe across hot-reloads
 if (!customElements.get("consultant-widget")) {
   customElements.define("consultant-widget", ConsultantWidget);
-}
-
-// ─── Admin dashboard mount (#root div in public/index.html) ─────────────────
-const adminContainer =
-  document.getElementById("root") ||
-  document.getElementById("consultant-root");
-
-if (adminContainer) {
-  const urlParams = new URLSearchParams(window.location.search);
-  const instanceId = urlParams.get("instance") || "";
-
-  ReactDOM.createRoot(adminContainer).render(
-    <RootApp instanceId={instanceId} />
-  );
+  console.log("[🌐 PUBLIC WIDGET] Custom element registered: <consultant-widget>");
 }
 
 // ─── Service Worker (Firebase Cloud Messaging) ───────────────────────────────
@@ -188,8 +178,8 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/firebase-messaging-sw.js")
-      .then((reg) => console.log("[SW] registered:", reg.scope))
-      .catch((err) => console.error("[SW] failed:", err));
+      .then((reg) => console.log("[🌐 PUBLIC WIDGET - SW] registered:", reg.scope))
+      .catch((err) => console.error("[🌐 PUBLIC WIDGET - SW] failed:", err));
   });
 }
 

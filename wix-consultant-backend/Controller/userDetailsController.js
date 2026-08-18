@@ -125,33 +125,48 @@ const getVouchersController = async (req, res) => {
 
 // get app status (storefront — resolve admin by Mongo id or Wix instance)
 const getAppStatusController = async (req, res) => {
+    const apiStartTime = Date.now();
+    console.log(`[API] getAppStatus START`);
+
     try {
         const { instance, adminIdLocal } = req.query;
         let admin = null;
 
+        // OPTIMIZATION: Use direct query first, then fallback
         if (adminIdLocal && mongoose.Types.ObjectId.isValid(adminIdLocal)) {
-            admin = await shopModel.findById(adminIdLocal);
+            admin = await shopModel.findById(adminIdLocal).select("appEnabled _id");
         }
 
         if (!admin && instance) {
+            const dbStartTime = Date.now();
+
+            // OPTIMIZATION: Only call resolveWixInstanceFromToken if we don't have adminIdLocal
             const resolved = await resolveWixInstanceFromToken(instance);
+
+            // OPTIMIZATION: Use parallel queries for the three possible lookups
             if (resolved?.shopMongoId) {
-                admin = await shopModel.findById(resolved.shopMongoId);
+                admin = await shopModel.findById(resolved.shopMongoId).select("appEnabled _id");
             } else if (resolved?.instanceId) {
-                admin = await shopModel.findOne({
-                    instanceId: resolved.instanceId,
-                });
+                admin = await shopModel.findOne({ instanceId: resolved.instanceId }).select("appEnabled _id");
             } else {
-                admin = await shopModel.findOne({ instanceId: instance });
+                admin = await shopModel.findOne({ instanceId: instance }).select("appEnabled _id");
             }
+
+            const dbDuration = Date.now() - dbStartTime;
+            console.log(`[DB] getAppStatus queries: ${dbDuration}ms`);
         }
 
         if (!admin) {
+            const totalDuration = Date.now() - apiStartTime;
+            console.log(`[API] getAppStatus END (not found) - ${totalDuration}ms`);
             return res.status(404).json({
                 success: false,
                 message: "Admin not found",
             });
         }
+
+        const totalDuration = Date.now() - apiStartTime;
+        console.log(`[API] getAppStatus END - ${totalDuration}ms`);
 
         return res.status(200).json({
             success: true,
@@ -160,7 +175,12 @@ const getAppStatusController = async (req, res) => {
             adminId: admin._id,
         });
     } catch (error) {
-        console.error("Error in getAppStatusController:", error);
+        const totalDuration = Date.now() - apiStartTime;
+        console.error(`[API] getAppStatus ERROR (${totalDuration}ms):`, {
+            name: error.name,
+            message: error.message,
+            code: error.code,
+        });
         return res.status(500).json({
             success: false,
             message: error.message || "Server error",

@@ -42,14 +42,24 @@ const recordStorefrontHeartbeat = (instanceId) => {
  * Returns everything the setup wizard needs to render its steps.
  */
 const getStorefrontStatus = async (req, res) => {
+  const apiStartTime = Date.now();
+  console.log(`[API] getStorefrontStatus START - adminId: ${req.params.adminId}`);
+
   try {
+    const shopStartTime = Date.now();
     const shop = await findShopByAdminId(req.params.adminId);
+    const shopDuration = Date.now() - shopStartTime;
+    console.log(`[DB] findShopByAdminId: ${shopDuration}ms`);
+
     if (!shop) {
+      const totalDuration = Date.now() - apiStartTime;
+      console.log(`[API] getStorefrontStatus END (shop not found) - ${totalDuration}ms`);
       return res
         .status(404)
         .json({ success: false, message: "Shop not found" });
     }
 
+    const queriesStartTime = Date.now();
     const [consultantCount, status] = await Promise.all([
       User.countDocuments({
         shop_id: String(shop._id),
@@ -57,11 +67,16 @@ const getStorefrontStatus = async (req, res) => {
       }),
       StorefrontStatus.findOne({ instanceId: shop.instanceId }),
     ]);
+    const queriesDuration = Date.now() - queriesStartTime;
+    console.log(`[DB] parallel queries (count + findOne): ${queriesDuration}ms`);
 
     const lastSeenAt = status?.lastSeenAt || null;
     const storefrontConnected =
       !!lastSeenAt &&
       Date.now() - new Date(lastSeenAt).getTime() < CONNECTED_WINDOW_MS;
+
+    const totalDuration = Date.now() - apiStartTime;
+    console.log(`[API] getStorefrontStatus END - ${totalDuration}ms`);
 
     return res.status(200).json({
       success: true,
@@ -74,7 +89,12 @@ const getStorefrontStatus = async (req, res) => {
       deepLinkGeneratedAt: status?.deepLinkGeneratedAt || null,
     });
   } catch (error) {
-    console.error("getStorefrontStatus error:", error.message);
+    const totalDuration = Date.now() - apiStartTime;
+    console.error(`[API] getStorefrontStatus ERROR (${totalDuration}ms):`, {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+    });
     return res
       .status(500)
       .json({ success: false, message: "Failed to load storefront status" });

@@ -37,12 +37,11 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:public-widget": "set REACT_APP_BUILD_TARGET=public-widget && set PUBLIC_URL=/ && react-scripts build",
+    "build:admin": "set REACT_APP_BUILD_TARGET=admin && set PUBLIC_URL=/admin/ && react-scripts build",
+    "build:all": "npm run build:public-widget && npm run build:admin",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "build:storefront": "REACT_APP_BUILD_TARGET=storefront PUBLIC_URL=/ react-scripts build",
-    "build:consultant": "REACT_APP_BUILD_TARGET=consultant PUBLIC_URL=/ react-scripts build",
-    "build:customer": "REACT_APP_BUILD_TARGET=customer PUBLIC_URL=/ react-scripts build",
-    "build:all": "npm run build:storefront && npm run build:consultant && npm run build:customer"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [

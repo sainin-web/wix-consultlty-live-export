@@ -6,9 +6,22 @@ const cookieParser = require("cookie-parser");
 const { connectDB } = require("./Utils/db");
 const { corsOptions } = require("./config/corsConfig");
 dotenv.config();
-connectDB();
+
 const path = require("path");
 const app = express();
+
+// Wrap in async IIFE to properly await DB connection before starting server
+(async () => {
+  console.log("[SERVER] Starting application...");
+
+  try {
+    console.log("[SERVER] Connecting to MongoDB...");
+    await connectDB();
+    console.log("[SERVER] ✓ MongoDB connection ready");
+  } catch (err) {
+    console.error("[SERVER] ✗ Failed to connect to MongoDB:", err.message);
+    process.exit(1);
+  }
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
@@ -125,7 +138,15 @@ app.use("/api/admin", adminRoute);
 
 
 
-ioServer(server);
-server.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
+  // Setup Socket.io
+  ioServer(server);
+
+  // Start server
+  server.listen(PORT, () => {
+    console.log(`[SERVER] ✓ Running on port ${PORT}`);
+  });
+
+})().catch((err) => {
+  console.error("[SERVER] ✗ Fatal error:", err);
+  process.exit(1);
 });
