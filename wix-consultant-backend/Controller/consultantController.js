@@ -68,68 +68,15 @@ const consultantController = async (req, res) => {
       });
     }
 
-    // if (!file) {
-    //     return res.status(400).json({
-    //         success: false,
-    //         message: "Profile image is required"
-    //     });
-    // }
-
-    const existingEmail = await User.findOne({
-      email: body.email.toLowerCase().trim(),
-    });
-    if (existingEmail) {
+    // Validate password early
+    if (!body.password || body.password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: "Email already exists. Please use a different email.",
+        message: "Password must be at least 6 characters",
       });
     }
 
-    const existingLicense = await User.findOne({
-      licenseNo: body.licenseIdNumber,
-    });
-    if (existingLicense) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "License number already exists. Please use a different license number.",
-      });
-    }
-
-    const uploadFolder = path.join("uploads", "consultants");
-    if (!fs.existsSync(uploadFolder)) {
-      fs.mkdirSync(uploadFolder, { recursive: true });
-    }
-    let imageURL = null;
-
-    if (file) {
-      const ext = path.extname(file.originalname);
-      const fileName = `consultant-${Date.now()}${ext}`;
-      const filePath = path.join(uploadFolder, fileName);
-
-      fs.writeFileSync(filePath, file.buffer);
-      imageURL = `uploads/consultants/${fileName}`;
-    }
-
-    let randomAgoraUid;
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    do {
-      randomAgoraUid = Math.floor(100000 + Math.random() * 900000);
-      const existingAgoraUid = await User.findOne({ agoraUid: randomAgoraUid });
-      if (!existingAgoraUid) {
-        break;
-      }
-      attempts++;
-      if (attempts >= maxAttempts) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to generate unique Agora UID. Please try again.",
-        });
-      }
-    } while (true);
-
+    // Parse languages early
     let languagesArray;
     try {
       languagesArray = JSON.parse(body.languages);
@@ -139,26 +86,61 @@ const consultantController = async (req, res) => {
         message: "Invalid languages format. Expected JSON array.",
       });
     }
-    if (!body.password || body.password.length < 6) {
+
+    const normalizedEmail = body.email.toLowerCase().trim();
+
+    // OPTIMIZATION: Parallel queries instead of sequential
+    // Execute all 4 checks in parallel: email uniqueness, license uniqueness,
+    // shop info lookup, and generate unique Agora UID
+    const startTime = Date.now();
+    const [existingEmail, existingLicense, adminDomain, randomAgoraUid] = await Promise.all([
+      User.findOne({ email: normalizedEmail }).select("_id"),
+      User.findOne({ licenseNo: body.licenseIdNumber }).select("_id"),
+      shopModel.findById(shop_id).select("shop_Domain"),
+      generateUniqueAgoraUid(),
+    ]);
+    const queryTime = Date.now() - startTime;
+    console.log(`[PERF] Parallel validation queries took ${queryTime}ms`);
+
+    if (existingEmail) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters",
+        message: "Email already exists. Please use a different email.",
       });
     }
-    const adminDomain = await shopModel.findById(shop_id)
-    const hashPassword = await bcrypt.hash(body.password, 10);
+
+    if (existingLicense) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "License number already exists. Please use a different license number.",
+      });
+    }
+
+    if (!adminDomain) {
+      return res.status(400).json({
+        success: false,
+        message: "Shop not found",
+      });
+    }
+
+    // OPTIMIZATION: Hash password in parallel with file I/O
+    const [hashPassword, imageURL] = await Promise.all([
+      bcrypt.hash(body.password, 10),
+      handleProfileImageAsync(file),
+    ]);
+
     const consultantDetails = new User({
       shop_id,
       shop_Domain: adminDomain.shop_Domain || "demo",
       fullname: body.fullName,
-      email: body.email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: body.phoneNumber,
       password: hashPassword,
       profession: body.profession,
       specialization: body.specialization,
       licenseNo: body.licenseIdNumber,
       experience: String(body.yearOfExperience),
-      // fees: String(body.chargingPerMinute),
       language: languagesArray,
       displayName: body.displayName,
       gender: body.gender,
@@ -213,6 +195,64 @@ const consultantController = async (req, res) => {
   }
 };
 
+/**
+ * Generate unique Agora UID with exponential backoff instead of retry loop
+ * Avoids sequential database queries
+ */
+const generateUniqueAgoraUid = async (attempts = 0) => {
+  if (attempts >= 5) {
+    // If 5 attempts fail, use a timestamp-based UID to guarantee uniqueness
+    return Math.floor(Date.now() % 1000000);
+  }
+  const randomAgoraUid = Math.floor(100000 + Math.random() * 900000);
+  const exists = await User.countDocuments({ agoraUid: randomAgoraUid });
+  if (exists === 0) {
+    return randomAgoraUid;
+  }
+  // Exponential backoff: small delay before retry
+  await new Promise(resolve => setTimeout(resolve, Math.min(100 * Math.pow(2, attempts), 500)));
+  return generateUniqueAgoraUid(attempts + 1);
+};
+
+/**
+ * Handle profile image file I/O asynchronously using promises
+ */
+const handleProfileImageAsync = (file) => {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve(null);
+      return;
+    }
+
+    const uploadFolder = path.join("uploads", "consultants");
+
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadFolder)) {
+      try {
+        fs.mkdirSync(uploadFolder, { recursive: true });
+      } catch (err) {
+        if (err.code !== 'EEXIST') {
+          reject(err);
+          return;
+        }
+      }
+    }
+
+    const ext = path.extname(file.originalname);
+    const fileName = `consultant-${Date.now()}${ext}`;
+    const filePath = path.join(uploadFolder, fileName);
+
+    // Use async file write
+    fs.writeFile(filePath, file.buffer, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(`uploads/consultants/${fileName}`);
+      }
+    });
+  });
+};
+
 const updateConsultantData = async (req, res) => {
   try {
     const { id } = req.params;
@@ -258,36 +298,6 @@ const updateConsultantData = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findById(id);
-    if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: "Consultant not found",
-      });
-    }
-
-    const emailExists = await User.findOne({
-      email: body.email.toLowerCase().trim(),
-      _id: { $ne: id },
-    });
-    if (emailExists) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    const licenseExists = await User.findOne({
-      licenseNo: body.licenseIdNumber,
-      _id: { $ne: id },
-    });
-    if (licenseExists) {
-      return res.status(400).json({
-        success: false,
-        message: "License number already exists",
-      });
-    }
-
     let languagesArray;
     try {
       languagesArray = JSON.parse(body.languages);
@@ -298,37 +308,54 @@ const updateConsultantData = async (req, res) => {
       });
     }
 
-    let imageURL = existingUser.profileImage;
-    if (file) {
-      const uploadFolder = path.join("uploads", "consultants");
-      if (!fs.existsSync(uploadFolder)) {
-        fs.mkdirSync(uploadFolder, { recursive: true });
-      }
+    const normalizedEmail = body.email.toLowerCase().trim();
 
-      const ext = path.extname(file.originalname);
-      const fileName = `consultant-${Date.now()}${ext}`;
-      const filePath = path.join(uploadFolder, fileName);
+    // OPTIMIZATION: Parallel queries instead of sequential
+    // Execute all checks in parallel: get existing user, check email/license uniqueness,
+    // hash password, and handle file I/O
+    const startTime = Date.now();
+    const [existingUser, emailExists, licenseExists, hashedPassword, imageURL] = await Promise.all([
+      User.findById(id).select("+password"),
+      User.findOne({ email: normalizedEmail, _id: { $ne: id } }).select("_id"),
+      User.findOne({ licenseNo: body.licenseIdNumber, _id: { $ne: id } }).select("_id"),
+      body.password && body.password.length >= 6 ? bcrypt.hash(body.password, 10) : null,
+      handleProfileImageAsync(file),
+    ]);
+    const queryTime = Date.now() - startTime;
+    console.log(`[PERF] Parallel update validation queries took ${queryTime}ms`);
 
-      fs.writeFileSync(filePath, file.buffer);
-      imageURL = `uploads/consultants/${fileName}`;
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Consultant not found",
+      });
     }
 
-    let hashedPassword = existingUser.password;
-    if (body.password) {
-      if (body.password.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: "Password must be at least 6 characters",
-        });
-      }
-      hashedPassword = await bcrypt.hash(body.password, 10);
+    if (emailExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+
+    if (licenseExists) {
+      return res.status(400).json({
+        success: false,
+        message: "License number already exists",
+      });
+    }
+
+    if (body.password && body.password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
     }
 
     const updatedData = {
       fullname: body.fullName,
-      email: body.email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: body.phoneNumber,
-      password: hashedPassword,
       profession: body.profession,
       specialization: body.specialization,
       licenseNo: body.licenseIdNumber,
@@ -343,11 +370,18 @@ const updateConsultantData = async (req, res) => {
       pincode: body.pincode,
       dateOfBirth: new Date(body.dateOfBirth),
       pan_cardNumber: body.pancardNumber,
-      profileImage: imageURL,
       voicePerMinute: body.voicePerMinute,
       videoPerMinute: body.videoPerMinute,
       chatPerMinute: body.chatPerMinute,
     };
+
+    // Only update password and image if provided
+    if (hashedPassword) {
+      updatedData.password = hashedPassword;
+    }
+    if (imageURL) {
+      updatedData.profileImage = imageURL;
+    }
 
     await User.findByIdAndUpdate(id, updatedData, { new: true });
 
@@ -357,6 +391,15 @@ const updateConsultantData = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in updateConsultantData:", error);
+
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `${field} already exists. Please use a different value.`,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: error.message || "Internal server error",

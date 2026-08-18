@@ -191,6 +191,15 @@ registerUserSchema.index({ wixMemberId: 1 });
 // Instance lookup (for Wix validation)
 registerUserSchema.index({ instanceId: 1 });
 
+// Agora UID lookup (for uniqueness check) - sparse to avoid null values
+registerUserSchema.index({ agoraUid: 1 }, { sparse: true });
+
+// License number lookup (for uniqueness check)
+registerUserSchema.index({ licenseNo: 1 }, { sparse: true });
+
+// Admin consultant listing (shop_id + userType)
+registerUserSchema.index({ shop_id: 1, userType: 1 });
+
 // Model already exists check karo - duplicate model name se bachne ke liye
 const User =
   mongoose.models.ragisterUser ||

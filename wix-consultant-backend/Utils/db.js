@@ -8,9 +8,14 @@ const connectDB = () => {
       console.error("MongoDB URL not found in environment variables");
       return;
    }
-   return mongoose.connect(url)
+   return mongoose.connect(url, {
+      maxPoolSize: 20,
+      minPoolSize: 5,
+      socketTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 5000,
+   })
       .then(() => {
-         console.log("MongoDB connected successfully");
+         console.log("MongoDB connected successfully with poolSize 20");
       })
       .catch(err => {
          console.error("MongoDB connection error:", err);

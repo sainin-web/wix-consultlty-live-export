@@ -92,6 +92,10 @@ const checkAppBillingController_and_Installection = async (req, res) => {
 const getShopAllConsultant = async (req, res) => {
   try {
     const { adminId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     if (!adminId) {
       return res.status(400).json({
         success: false,
@@ -104,20 +108,42 @@ const getShopAllConsultant = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Invalid shop ID" });
     }
-    let consultants = await User.find({
-      userType: "consultant",
-      shop_id: shop_id,
-    }).select("-password");
-    consultants = consultants.map((item) => {
+
+    // Parallel queries: count total and fetch paginated results
+    const [total, consultants] = await Promise.all([
+      User.countDocuments({
+        userType: "consultant",
+        shop_id: shop_id,
+      }),
+      User.find({
+        userType: "consultant",
+        shop_id: shop_id,
+      })
+        .select("-password")
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const mappedConsultants = consultants.map((item) => {
       return {
-        ...item._doc,
+        ...item,
         profileImage: item.profileImage
           ? `${req.protocol}://${req.get("host")}/${item.profileImage.replace(/\\/g, "/")}`
           : null,
       };
     });
 
-    return res.status(200).send({ success: true, findConsultant: consultants });
+    return res.status(200).send({
+      success: true,
+      findConsultant: mappedConsultants,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).send({ success: false, message: error.message });
