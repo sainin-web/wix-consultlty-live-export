@@ -55,23 +55,57 @@ class WixBridge {
 
   /**
    * Send message to parent Wix page (with origin validation)
+   * Handles both iframe and Wix Custom Element contexts
    * Never send secrets or access tokens in postMessage
    */
   sendToParent(type, payload = {}) {
-    if (window.self === window.top) {
-      console.log('[WixBridge] Not in iframe, message not sent:', type);
+    const isIframe = window.self !== window.top;
+    const message = { type, ...payload };
+
+    // For custom elements: Store message in element's dataset and dispatch custom event
+    if (!isIframe) {
+      this.sendViaCustomElement(type, message);
       return;
     }
 
-    const message = { type, ...payload };
-
-    // Use a specific origin in production
+    // For iframes: Use postMessage
     const targetOrigin = process.env.NODE_ENV === 'production'
       ? (process.env.REACT_APP_WIX_SITE_ORIGIN || '*')
       : '*';
 
     window.parent.postMessage(message, targetOrigin);
-    console.log('[WixBridge] Sent to parent:', type);
+    console.log('[WixBridge] Sent to parent (iframe):', type);
+  }
+
+  /**
+   * Send message via Wix Custom Element mechanism
+   * Stores height in element dataset and fires custom event
+   */
+  sendViaCustomElement(type, message) {
+    try {
+      // Find the custom element that contains this React app
+      const widget = document.querySelector('consultant-widget');
+
+      if (!widget) {
+        console.warn('[WixBridge] Custom element not found, cannot send:', type);
+        return;
+      }
+
+      // Store the message data on the element for Wix to read
+      widget.setAttribute(`data-${type.toLowerCase()}`, JSON.stringify(message));
+
+      // Dispatch custom event so Wix can listen
+      const event = new CustomEvent('wix-widget-update', {
+        detail: { type, ...message },
+        bubbles: true,
+        composed: true
+      });
+      widget.dispatchEvent(event);
+
+      console.log('[WixBridge] Sent via custom element:', type, message);
+    } catch (err) {
+      console.error('[WixBridge] Failed to send via custom element:', err);
+    }
   }
 
   /**

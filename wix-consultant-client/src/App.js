@@ -31,7 +31,7 @@
   import ApplicationHeader from "./components/WidgetHeader/ApplicationHeader";
   import { wixBridge } from "./integrations/wix/wixBridge";
   import { widgetModeManager } from "./integrations/wix/wixWidgetModes";
-  import { useWixResize } from "./integrations/wix/wixResize";
+  import wixResizer, { useWixResize } from "./integrations/wix/wixResize";
 
   // ── Lazy pages ────────────────────────────────────────────────────────────────
   const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -123,13 +123,11 @@
       wixBridge.notifyReady();
       setIsWidgetReady(true);
 
-      // Trigger initial resize
-      if (window.self !== window.top) {
-        wixResizer.markAsWixEmbed();
-        wixResizer.start();
-      }
+      // Mark as Wix embed and start dynamic resizing
+      wixResizer.markAsWixEmbed();
+      wixResizer.start();
 
-      console.log('[App] Wix integration initialized');
+      console.log('[App] Wix integration initialized - Dynamic resizer active');
     }, []);
 
     // ── Widget Mode Management ──
@@ -147,6 +145,9 @@
         }
       }
     }, [location.pathname]);
+
+    // ── Wix Resize Hook (handles initialization and route changes) ──
+    useWixResize(location);
 
     useEffect(() => {
       dispatch(verifyToken());

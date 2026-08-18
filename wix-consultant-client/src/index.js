@@ -84,7 +84,55 @@ class ConsultantWidget extends HTMLElement {
       this._reactRoot = ReactDOM.createRoot(this);
     }
 
+    // Setup height observer for Wix Custom Element communication
+    this._setupHeightObserver();
+
     this._doRender(instanceId);
+  }
+
+  /**
+   * Monitor for height changes from React and notify Wix
+   */
+  _setupHeightObserver() {
+    // Listen for custom events from wixBridge
+    this.addEventListener('wix-widget-update', (event) => {
+      const { type, height } = event.detail;
+
+      if (type === 'IFRAME_HEIGHT' && height) {
+        // Wix page should listen for this event and resize the custom element
+        // Dispatch a native event that Wix can listen for
+        window.dispatchEvent(new CustomEvent('wix:widget:height-changed', {
+          detail: { height, selector: 'consultant-widget' }
+        }));
+
+        console.log('[consultant-widget] Height update event dispatched:', height);
+      }
+    });
+
+    // Observe mutations to detect height attribute changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-iframe_height') {
+          const heightStr = this.getAttribute('data-iframe_height');
+          if (heightStr) {
+            try {
+              const { height } = JSON.parse(heightStr);
+              if (height) {
+                this.style.minHeight = height + 'px';
+                console.log('[consultant-widget] Applied height from data attribute:', height);
+              }
+            } catch (e) {
+              console.error('[consultant-widget] Failed to parse height:', e);
+            }
+          }
+        }
+      });
+    });
+
+    observer.observe(this, {
+      attributes: true,
+      attributeFilter: ['data-iframe_height']
+    });
   }
 
   // Fires whenever the "instance" attribute is set/changed by Wix

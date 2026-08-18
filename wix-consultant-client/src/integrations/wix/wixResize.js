@@ -14,6 +14,7 @@ export class WixResizer {
     this.debounceTimer = null;
     this.lastHeight = 0;
     this.isActive = false;
+    this.debug = process.env.NODE_ENV === 'development'; // Debug mode
   }
 
   /**
@@ -23,8 +24,15 @@ export class WixResizer {
     if (this.isActive) return;
     this.isActive = true;
 
-    // Initial measurement
-    this.measure();
+    if (this.debug) {
+      console.log('[WixResize.start] Initializing resize monitor');
+      console.log('  - isEmbedded:', window.self !== window.top);
+      console.log('  - document.body:', document.body);
+      console.log('  - #root:', document.getElementById('root'));
+    }
+
+    // Initial measurement (delayed to allow React to render)
+    setTimeout(() => this.measure(), 50);
 
     // Listen for window resize
     window.addEventListener('resize', () => this.debouncedMeasure());
@@ -35,7 +43,7 @@ export class WixResizer {
     // Watch route changes
     window.addEventListener('popstate', () => this.debouncedMeasure());
 
-    console.log('[WixResize] Started monitoring');
+    console.log('[WixResize] ✓ Monitoring started (content-based sizing active)');
   }
 
   /**
@@ -61,19 +69,58 @@ export class WixResizer {
   }
 
   /**
-   * Measure content and send height to parent
+   * Measure content and apply height directly + send to parent
    */
   measure() {
-    if (!this.isActive || window.self === window.top) {
+    if (!this.isActive) {
       return;
     }
 
     const height = this.calculateHeight();
+    const change = Math.abs(height - this.lastHeight);
+    const isSignificantChange = change > 15;
 
-    // Only send if height changed significantly
-    if (Math.abs(height - this.lastHeight) > 10) {
+    if (this.debug) {
+      console.log('[WixResize.measure]', {
+        calculated: height,
+        previous: this.lastHeight,
+        change: change,
+        isSignificant: isSignificantChange,
+        mode: widgetModeManager?.getMode?.() || 'unknown',
+      });
+    }
+
+    // Only update if height changed significantly (tolerance: 15px)
+    if (isSignificantChange) {
       this.lastHeight = height;
+
+      // Apply height directly to document/html
+      this.applyHeight(height);
+
+      // Always send height to Wix (works for both custom elements and iframes)
       wixBridge.updateHeight(height);
+
+      console.log('[WixResize] ✓ Height updated:', height, 'px (sent to Wix)');
+    }
+  }
+
+  /**
+   * Apply calculated height to the document
+   */
+  applyHeight(height) {
+    // Set on html, body, and root containers
+    document.documentElement.style.height = 'auto';
+    document.documentElement.style.minHeight = height + 'px';
+
+    document.body.style.height = 'auto';
+    document.body.style.minHeight = height + 'px';
+
+    if (this.debug) {
+      console.log('[WixResize.applyHeight] Applied:', {
+        height: height + 'px',
+        htmlMinHeight: document.documentElement.style.minHeight,
+        bodyMinHeight: document.body.style.minHeight,
+      });
     }
   }
 
@@ -82,12 +129,16 @@ export class WixResizer {
    */
   calculateHeight() {
     // Dashboard mode: use full viewport
-    if (widgetModeManager.isDashboardMode()) {
-      return this.getDashboardHeight();
+    if (widgetModeManager?.isDashboardMode?.()) {
+      const height = this.getDashboardHeight();
+      if (this.debug) console.log('[WixResize.calculateHeight] DASHBOARD mode:', height);
+      return height;
     }
 
     // Storefront mode: measure content
-    return this.getContentHeight();
+    const height = this.getContentHeight();
+    if (this.debug) console.log('[WixResize.calculateHeight] STOREFRONT mode:', height);
+    return height;
   }
 
   /**
@@ -111,48 +162,69 @@ export class WixResizer {
   }
 
   /**
-   * Get content height (storefront mode)
+   * Get content height (storefront mode) - for Wix Custom Element
    */
   getContentHeight() {
     // Check for chat page (special sizing)
     if (document.querySelector('.chat-route-shell')) {
-      return this.getChatHeight();
+      const height = this.getChatHeight();
+      if (this.debug) console.log('[WixResize.getContentHeight] Chat page detected:', height);
+      return height;
     }
 
     // Check for dashboard shell (shouldn't happen, but safe)
     if (document.querySelector('.consultant-dashboard-shell')) {
-      return this.getDashboardHeight();
+      const height = this.getDashboardHeight();
+      if (this.debug) console.log('[WixResize.getContentHeight] Dashboard detected:', height);
+      return height;
     }
 
-    // Standard content measurement
+    // Standard content measurement for Wix custom element
     const shell = document.querySelector('.iframe-page-shell');
     if (shell) {
-      const rect = shell.getBoundingClientRect();
-      const height = Math.ceil(
-        Math.max(shell.scrollHeight, shell.offsetHeight, rect.height) +
-        window.scrollY +
-        12
-      );
-      return this.clampHeight(height);
+      // Use scrollHeight for accurate content height
+      const scrollHeight = shell.scrollHeight;
+      const height = Math.ceil(scrollHeight + 16); // +16 for padding
+      const clamped = this.clampHeight(height);
+      if (this.debug) {
+        console.log('[WixResize.getContentHeight] iframe-page-shell:', {
+          scrollHeight,
+          withPadding: height,
+          clamped,
+        });
+      }
+      return clamped;
     }
 
-    // Fallback: measure root element
+    // Fallback: measure all visible children of root
     const root = document.getElementById('root') || document.getElementById('consultant-root');
     const measureRoot = root || document.body;
-    let bottom = 0;
+
+    // Measure from top of body to bottom of last visible child
+    let maxBottom = 0;
 
     Array.from(measureRoot.children).forEach((el) => {
       if (el.nodeType !== 1) return;
+
       const style = window.getComputedStyle(el);
       if (style.display === 'none' || style.visibility === 'hidden') return;
-      bottom = Math.max(bottom, el.getBoundingClientRect().bottom + window.scrollY);
+
+      // Get element's position relative to viewport
+      const rect = el.getBoundingClientRect();
+      // Calculate absolute position (relative to document, not viewport)
+      const absoluteBottom = rect.bottom + window.pageYOffset;
+      maxBottom = Math.max(maxBottom, absoluteBottom);
     });
 
-    if (bottom === 0) {
-      bottom = measureRoot.getBoundingClientRect().bottom + window.scrollY;
+    // If no children found, measure the root itself
+    if (maxBottom === 0) {
+      const rootRect = measureRoot.getBoundingClientRect();
+      maxBottom = rootRect.bottom + window.pageYOffset;
     }
 
-    return this.clampHeight(Math.ceil(bottom + 12));
+    // Add bottom padding and clamp
+    const finalHeight = Math.ceil(maxBottom + 16); // +16 for spacing
+    return this.clampHeight(finalHeight);
   }
 
   /**
@@ -222,9 +294,9 @@ export class WixResizer {
 export const wixResizer = new WixResizer();
 
 /**
- * React hook for iframe resizing
+ * React hook for iframe resizing with route change detection
  */
-export function useWixResize() {
+export function useWixResize(location = null) {
   React.useEffect(() => {
     wixResizer.markAsWixEmbed();
     wixResizer.start();
@@ -233,6 +305,16 @@ export function useWixResize() {
       wixResizer.stop();
     };
   }, []);
+
+  // Measure again when location changes (route change in React Router)
+  React.useEffect(() => {
+    // Wait for React to render the new content
+    const timer = setTimeout(() => {
+      wixResizer.measure();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [location?.pathname]);
 }
 
 export default wixResizer;

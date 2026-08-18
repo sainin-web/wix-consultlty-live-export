@@ -921,8 +921,14 @@ body.is-admin {
 
 #consultant-root, .App {
   display: block;
-  min-height: 100vh;
+  min-height: auto;
   overflow: visible !important;
+}
+
+/* Only use 100vh for non-Wix embedded pages */
+html:not(.wix-embed) #consultant-root,
+html:not(.wix-embed) .App {
+  min-height: 100vh;
 }
 
 /* ── Wix iframe embed: one rule for ALL storefront pages ── */
