@@ -37,6 +37,15 @@ module.exports = {
       if (buildTarget === 'admin') {
         webpackConfig.output.filename = 'static/js/admin-[name].[contenthash:8].js';
         webpackConfig.output.chunkFilename = 'static/js/admin-[name].[contenthash:8].chunk.js';
+
+        // Use admin HTML template
+        webpackConfig.plugins = webpackConfig.plugins.map(plugin => {
+          if (plugin.constructor.name === 'HtmlWebpackPlugin') {
+            plugin.options.template = path.resolve(__dirname, 'public/admin/index.html');
+            console.log(`[CRACO CONFIG] HTML template: public/admin/index.html`);
+          }
+          return plugin;
+        });
       }
 
       return webpackConfig;

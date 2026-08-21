@@ -48,6 +48,7 @@ const wixWebhookController = async (req, res) => {
       } catch (_) {
         console.log("Failed to parse decoded.data");
       }
+      
     } else if (decoded.instance && typeof decoded.instance === "string") {
       const parts = decoded.instance.split(".");
       try {

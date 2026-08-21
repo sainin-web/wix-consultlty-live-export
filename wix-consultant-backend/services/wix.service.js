@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { shopModel } = require("../Modal/shopify");
+const { User } = require("../Modal/userSchema");
 const dotenv = require("dotenv")
 dotenv.config()
 
@@ -9,7 +10,7 @@ dotenv.config()
  */
 
 /**
- * Shared install logic — fetch token + save to DB
+ * Shared install logic — fetch token + save to DB + create admin user
  * Called from both the install controller (GET) and webhook (POST)
  */
 const handleWixInstall = async ({ instanceId, appDefId = "", siteOwnerId = "", siteMemberId = "" }) => {
@@ -20,7 +21,7 @@ const handleWixInstall = async ({ instanceId, appDefId = "", siteOwnerId = "", s
         // Token valid hai toh refresh ki zaroorat nahi
         // Buffer: 60 seconds pehle hi refresh kar lo safety ke liye
         if (existing && existing.accessToken && existing.tokenExpiry > (Date.now() + 60000)) {
-            console.log("⏭️ Token still valid for:", instanceId);
+            console.log("⏭ Token still valid for:", instanceId);
             return existing;
         }
 
@@ -42,7 +43,7 @@ const handleWixInstall = async ({ instanceId, appDefId = "", siteOwnerId = "", s
 
         // 3. Fetch site domain using the new token
 
-        // 4. Upsert
+        // 4. Upsert Shop
         // Sirf wahi fields update karo jo param mein aayi hain (siteOwnerId etc.)
         const updateData = {
             accessToken: access_token,
@@ -62,7 +63,34 @@ const handleWixInstall = async ({ instanceId, appDefId = "", siteOwnerId = "", s
             { upsert: true, new: true }
         );
 
-        console.log("✅ DB Sync Complete for:", instanceId);
+        console.log("✅ Shop DB Sync Complete for:", instanceId);
+
+        // 5. Create Admin User if doesn't exist
+        const adminEmail = `admin-${instanceId}@wix-consultant.local`;
+        const existingAdmin = await User.findOne({
+            shop_id: String(updatedShop._id),
+            userType: "admin"
+        });
+
+        if (!existingAdmin) {
+            const newAdmin = new User({
+                fullname: `Admin - ${instanceId}`,
+                email: adminEmail,
+                shop_id: String(updatedShop._id),
+                shop_Domain: updatedShop.shop_Domain || "wix-shop",
+                wixMemberId: siteOwnerId || siteMemberId,
+                instanceId: instanceId,
+                userType: "admin",
+                isActive: true,
+                password: "", // No password for Wix admin (uses token auth)
+            });
+
+            await newAdmin.save();
+            console.log("✅ Admin User Created for:", instanceId);
+        } else {
+            console.log("ℹ️  Admin User already exists for:", instanceId);
+        }
+
         return updatedShop;
 
     } catch (error) {
