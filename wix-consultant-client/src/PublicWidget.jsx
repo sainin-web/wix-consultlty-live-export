@@ -293,7 +293,7 @@ export default function PublicWidget({
       <IncomingCallAlert />
 
       {/* ── Application Header (inside widget) ── */}
-      {isWidgetReady && !location.pathname.startsWith('/admin') && (
+      {isWidgetReady && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/consultant-dashboard') && (
         <ApplicationHeader />
       )}
 

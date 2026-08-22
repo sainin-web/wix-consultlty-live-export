@@ -54,6 +54,17 @@ if (!fs.existsSync(adminStaticDir) && fs.existsSync(currentStaticDir)) {
   console.log(`[POST-BUILD ADMIN] ✓ Copied static assets to admin/static/`);
 }
 
+// Copy manifest.json and other root files to admin/
+const rootFiles = ['manifest.json', 'favicon.ico', 'robots.txt', 'firebase-messaging-sw.js'];
+rootFiles.forEach(file => {
+  const srcFile = path.join(buildDir, file);
+  const destFile = path.join(adminDir, file);
+  if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
+    fs.copyFileSync(srcFile, destFile);
+    console.log(`[POST-BUILD ADMIN] ✓ Copied ${file} to admin/`);
+  }
+});
+
 // Helper to copy directory recursively
 function copyDirRecursive(src, dst) {
   if (!fs.existsSync(dst)) {

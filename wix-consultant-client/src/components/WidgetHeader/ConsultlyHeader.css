@@ -1,0 +1,121 @@
+/* CONSULTLY HEADER - Fast, Lightweight Styling */
+
+.consultly-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 12px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.consultly-header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.consultly-header-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Navigation Item */
+.consultly-nav-item {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+  border-radius: 4px;
+}
+
+.consultly-nav-item:hover {
+  color: #212529;
+  background-color: #f8f9fa;
+}
+
+.consultly-nav-item.active {
+  color: #4a90e2;
+  border-bottom-color: #4a90e2;
+  background-color: #f0f7ff;
+}
+
+/* Primary Button */
+.consultly-nav-item.consultly-primary {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 24px;
+  font-weight: 600;
+}
+
+.consultly-nav-item.consultly-primary:hover {
+  background-color: #3a7bc8;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+/* Item Group */
+.consultly-nav-item-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Logout Button */
+.consultly-nav-logout {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid #dee2e6;
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.consultly-nav-logout:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+  color: #212529;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .consultly-header-container {
+    padding: 0 12px;
+  }
+
+  .consultly-header-nav {
+    gap: 4px;
+  }
+
+  .consultly-nav-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .consultly-nav-item.consultly-primary {
+    padding: 8px 16px;
+  }
+
+  .consultly-nav-item-group {
+    margin-left: 0;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .consultly-nav-logout {
+    flex: 1;
+  }
+}

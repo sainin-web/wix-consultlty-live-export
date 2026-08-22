@@ -24,6 +24,9 @@ module.exports = {
       if (buildTarget === 'admin') {
         webpackConfig.entry = path.resolve(__dirname, 'src/admin-index.js');
         console.log(`[CRACO CONFIG] Entry point: src/admin-index.js`);
+      } else if (buildTarget === 'consultly') {
+        webpackConfig.entry = path.resolve(__dirname, 'src/consultly-widget.js');
+        console.log(`[CRACO CONFIG] Entry point: src/consultly-widget.js`);
       } else if (buildTarget === 'public-widget') {
         webpackConfig.entry = path.resolve(__dirname, 'src/index.js');
         console.log(`[CRACO CONFIG] Entry point: src/index.js`);
@@ -43,6 +46,18 @@ module.exports = {
           if (plugin.constructor.name === 'HtmlWebpackPlugin') {
             plugin.options.template = path.resolve(__dirname, 'public/admin/index.html');
             console.log(`[CRACO CONFIG] HTML template: public/admin/index.html`);
+          }
+          return plugin;
+        });
+      } else if (buildTarget === 'consultly') {
+        webpackConfig.output.filename = 'static/js/consultly-[name].[contenthash:8].js';
+        webpackConfig.output.chunkFilename = 'static/js/consultly-[name].[contenthash:8].chunk.js';
+
+        // Use consultly HTML template
+        webpackConfig.plugins = webpackConfig.plugins.map(plugin => {
+          if (plugin.constructor.name === 'HtmlWebpackPlugin') {
+            plugin.options.template = path.resolve(__dirname, 'public/consultly/index.html');
+            console.log(`[CRACO CONFIG] HTML template: public/consultly/index.html`);
           }
           return plugin;
         });

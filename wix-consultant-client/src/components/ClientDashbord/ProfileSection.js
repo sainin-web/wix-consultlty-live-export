@@ -31,6 +31,21 @@ const ProfileSection = () => {
   }, [userId]);
 
 
+  if (loading) {
+    return <div className={styles.profileSection}><p>Loading...</p></div>;
+  }
+
+  if (!user || !user.wixDbId) {
+    return (
+      <div className={styles.profileSection}>
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <h2>Login Required</h2>
+          <p>Please log in as a customer on Wix to view your profile.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.profileSection}>
       {/* Left side: user image / basic info */}
