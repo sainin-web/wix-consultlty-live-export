@@ -11,8 +11,6 @@ export default function CustomerProtected() {
     useEffect(() => {
         if (!loggedInCustomerId && shop) {
             console.log("❌ Customer not logged in → redirecting to Shopify login");
-
-            // 🔥 MUST break out of iframe
             window.top.location.href = `https://${shop}/account/login`;
         }
     }, [loggedInCustomerId, shop]);

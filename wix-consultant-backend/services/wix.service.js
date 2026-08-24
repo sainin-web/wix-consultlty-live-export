@@ -10,6 +10,63 @@ dotenv.config()
  */
 
 /**
+ * Auto-add "Consultly" menu item to storefront navigation
+ * Called during app installation to automatically create menu entry
+ */
+const addConsultlyToNavigation = async (accessToken, instanceId) => {
+  try {
+    console.log("📍 Attempting to add Consultly to navigation...");
+
+    // Get site navigation menus
+    const navigationRes = await axios.get(
+      'https://www.wixapis.com/v1/navigation/menus',
+      {
+        headers: {
+          'Authorization': accessToken,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const navMenus = navigationRes.data.menus || [];
+    if (!navMenus.length) {
+      console.log("ℹ️  [Wix Navigation] No navigation menus found");
+      return null;
+    }
+
+    // Get primary menu (usually index 0)
+    const primaryMenu = navMenus[0];
+    console.log("✅ Found navigation menu:", primaryMenu.id);
+
+    // Add "Consultly" menu item
+    const addItemRes = await axios.post(
+      `https://www.wixapis.com/v1/navigation/menus/${primaryMenu.id}/items`,
+      {
+        label: "Consultly",
+        url: "/consultly",
+        target: "SAME_WINDOW",
+        hidden: false
+      },
+      {
+        headers: {
+          'Authorization': accessToken,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log("✅ [Wix Navigation] Added Consultly menu item:", addItemRes.data?.itemId);
+    return addItemRes.data;
+
+  } catch (err) {
+    const errMsg = err.response?.data?.message || err.message;
+    console.warn(`⚠️  [Wix Navigation] Could not auto-add menu (non-fatal):`, errMsg);
+    // Don't fail installation if menu API fails
+    return null;
+  }
+};
+
+/**
  * Shared install logic — fetch token + save to DB + create admin user
  * Called from both the install controller (GET) and webhook (POST)
  */
@@ -91,6 +148,9 @@ const handleWixInstall = async ({ instanceId, appDefId = "", siteOwnerId = "", s
             console.log("ℹ️  Admin User already exists for:", instanceId);
         }
 
+        // 🎯 Auto-add Consultly to storefront navigation
+        await addConsultlyToNavigation(access_token, instanceId);
+
         return updatedShop;
 
     } catch (error) {
@@ -99,4 +159,4 @@ const handleWixInstall = async ({ instanceId, appDefId = "", siteOwnerId = "", s
     }
 };
 
-module.exports = { handleWixInstall };
+module.exports = { handleWixInstall, addConsultlyToNavigation };

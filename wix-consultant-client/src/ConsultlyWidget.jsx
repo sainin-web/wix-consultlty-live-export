@@ -8,9 +8,10 @@
  * - /consultant-dashboard → Full-screen dashboard
  *
  * NO heavy instance resolution = FAST!
+ * Includes Wix integration for proper context
  */
 
-import React, { Fragment, Suspense, lazy } from "react";
+import React, { Fragment, Suspense, lazy, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import GlobalMessageNotification from "./components/AlertModel/GlobalMessageNotification";
 import IncommingCallAlert from "./components/AlertModel/IncommingCallAlert";
@@ -20,6 +21,9 @@ import TabNavigation from "./components/ConsultantDashboard/TabNavigation";
 import StorefrontShell from "./components/ProtectRoute/StorefrontShell";
 import ErrorPage from "./pages/ErrorPage";
 import ConsultlyHeader from "./components/WidgetHeader/ConsultlyHeader";
+import { wixBridge } from "./integrations/wix/wixBridge";
+import { widgetModeManager } from "./integrations/wix/wixWidgetModes";
+import wixResizer, { useWixResize } from "./integrations/wix/wixResize";
 
 // ── Lazy load components for smaller bundle ──
 const ConsultantListing = lazy(() => import("./components/ConsultantCards/ConsultantListing"));
@@ -36,6 +40,35 @@ function ConsultlyWidget() {
 
   // Don't show header on dashboard
   const showHeader = !location.pathname.startsWith("/consultant-dashboard");
+
+  // ── Wix Integration ──
+  useEffect(() => {
+    // Initialize Wix bridge for consultly widget
+    wixBridge.notifyReady();
+    wixResizer.markAsWixEmbed();
+    wixResizer.start();
+
+    console.log('[CONSULTLY] Wix integration initialized - Dynamic resizer active');
+  }, []);
+
+  // ── Widget Mode Management ──
+  useEffect(() => {
+    const isConsultantLoggedIn = localStorage.getItem('consultant_logged_in') === 'true';
+    const isDashboard = location.pathname.startsWith('/consultant-dashboard');
+
+    if (isConsultantLoggedIn && isDashboard) {
+      widgetModeManager.setMode('dashboard');
+      wixBridge.requestDashboardMode();
+    } else {
+      widgetModeManager.setMode('storefront');
+      if (isConsultantLoggedIn) {
+        wixBridge.exitDashboardMode();
+      }
+    }
+  }, [location.pathname]);
+
+  // ── Wix Resize Hook ──
+  useWixResize(location);
 
   return (
     <Fragment>

@@ -43,11 +43,21 @@ function ConsultlyRoot() {
 
 // ─── CONSULTLY CUSTOM ELEMENT (LIGHTWEIGHT) ────────────────────────────────
 class ConsultlyWidgetElement extends HTMLElement {
+  static get observedAttributes() {
+    return ["instance"];
+  }
+
   connectedCallback() {
     if (this._mounted) return;
     this._mounted = true;
 
     console.log("✅ [CONSULTLY] Mounted (lightweight, fast!)");
+
+    const instanceId = this.getAttribute("instance") || "";
+    if (instanceId) {
+      console.log("[CONSULTLY] Received instance:", instanceId.slice(0, 20) + "...");
+      localStorage.setItem("wix_instance", instanceId);
+    }
 
     if (!this._reactRoot) {
       this._reactRoot = ReactDOM.createRoot(this);
@@ -57,6 +67,16 @@ class ConsultlyWidgetElement extends HTMLElement {
 
     // Send height to parent Wix after mount
     this._sendHeightToWix();
+  }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (name === "instance" && newVal && newVal !== oldVal) {
+      console.log("[CONSULTLY] Instance updated:", newVal.slice(0, 20) + "...");
+      localStorage.setItem("wix_instance", newVal);
+      if (this._reactRoot) {
+        this._reactRoot.render(<ConsultlyRoot />);
+      }
+    }
   }
 
   _sendHeightToWix() {
