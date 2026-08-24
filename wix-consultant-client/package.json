@@ -38,7 +38,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "build:public-widget": "cross-env REACT_APP_BUILD_TARGET=public-widget PUBLIC_URL=/ craco build",
-    "build:consultly": "cross-env REACT_APP_BUILD_TARGET=consultly PUBLIC_URL=/ craco build",
+    "build:consultly": "cross-env REACT_APP_BUILD_TARGET=consultly PUBLIC_URL=/ craco build && node scripts/postbuild-consultly.js",
     "build:admin": "node scripts/prebuild-admin.js && cross-env REACT_APP_BUILD_TARGET=admin PUBLIC_URL=/admin/ craco build && node scripts/postbuild-admin.js",
     "build:all": "npm run build:public-widget && npm run build:consultly && npm run build:admin",
     "test": "react-scripts test",

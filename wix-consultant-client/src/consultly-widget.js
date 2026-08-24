@@ -53,7 +53,7 @@ class ConsultlyWidgetElement extends HTMLElement {
 
     console.log("✅ [CONSULTLY] Mounted (lightweight, fast!)");
 
-    const instanceId = this.getAttribute("instance") || "";
+    const instanceId = this.getAttribute("instance") || localStorage.getItem("wix_instance") || "test-instance-dev-build";
     if (instanceId) {
       console.log("[CONSULTLY] Received instance:", instanceId.slice(0, 20) + "...");
       localStorage.setItem("wix_instance", instanceId);

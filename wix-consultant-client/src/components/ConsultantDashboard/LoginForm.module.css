@@ -1,73 +1,142 @@
-/* Login Page Container */
+/* ═════════════════════════════════════════════════════════════════
+   LOGIN FORM - PROFESSIONAL & MODERN
+   ═════════════════════════════════════════════════════════════════ */
+
 .loginPageContainer {
-    min-height: 80vh;
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 20px;
-    /* border: 1px solid red; */
+    position: relative;
+    overflow: hidden;
 }
 
-/* Login Container */
+.loginPageContainer::before {
+    content: "";
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    top: -200px;
+    left: -200px;
+    animation: float 6s ease-in-out infinite;
+}
+
+.loginPageContainer::after {
+    content: "";
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    bottom: -150px;
+    right: -150px;
+    animation: float 8s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(30px);
+    }
+}
+
 .loginContainer {
     width: 100%;
-    max-width: 650px;
-    /* border: 1px solid blue; */
+    max-width: 500px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 48px 40px;
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.5s ease-out;
 }
 
-/* Login Title */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .loginTitle {
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 700;
-    color: #212529;
+    color: #1a1a1a;
     text-align: center;
-    margin: 0 0 40px 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    margin: 0 0 12px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-/* Login Form */
+.loginContainer::before {
+    content: "Become a Consultant";
+    display: block;
+    text-align: center;
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 32px;
+    font-weight: 400;
+}
+
 .loginForm {
     width: 100%;
 }
 
-/* Form Group */
 .formGroup {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .formLabel {
     display: block;
-    font-size: 14px;
-    font-weight: 500;
-    color: #212529;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
     margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .formInput {
     width: 100%;
-    padding: 12px 16px;
-    border: 1px solid #d0d0d0;
-    border-radius: 6px;
+    padding: 13px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
     font-size: 15px;
-    color: #212529;
-    background: #e0f2f7;
-    transition: all 0.2s;
+    color: #1a1a1a;
+    background: #f8f9fa;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     outline: none;
     box-sizing: border-box;
-}
-
-.formInput:focus {
-    background: #e0f2f7;
-    border-color: #b0d4e0;
-    outline: none;
+    font-family: inherit;
 }
 
 .formInput::placeholder {
-    color: #6c757d;
+    color: #adb5bd;
 }
 
-/* Password Input Wrapper */
+.formInput:focus {
+    background: white;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.formInput:hover {
+    border-color: #dee2e6;
+}
+
 .passwordInputWrapper {
     position: relative;
     display: flex;
@@ -78,28 +147,34 @@
     padding-right: 48px;
 }
 
-/* Password Toggle */
 .passwordToggle {
     position: absolute;
-    right: 12px;
+    right: 14px;
     background: none;
     border: none;
-    color: #6c757d;
+    color: #adb5bd;
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: color 0.2s;
     z-index: 1;
+    width: 24px;
+    height: 24px;
 }
 
 .passwordToggle:hover {
-    color: #495057;
+    color: #667eea;
 }
 
 .passwordToggle:focus {
     outline: none;
+}
+
+.passwordToggle svg {
+    width: 20px;
+    height: 20px;
 }
 
 .inputError {
@@ -112,63 +187,81 @@
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
 }
 
-/* Error Message */
 .errorMessage {
     display: block;
-    font-size: 13px;
+    font-size: 12px;
     color: #dc3545;
     margin-top: 6px;
+    font-weight: 500;
 }
 
-/* Forgot Password Container */
 .forgotPasswordContainer {
-    text-align: center;
-    margin-bottom: 24px;
+    text-align: right;
+    margin: 16px 0 28px 0;
 }
 
 .forgotPassword {
-    font-size: 14px;
-    color: #212529;
+    font-size: 13px;
+    color: #667eea;
     text-decoration: none;
+    font-weight: 500;
     transition: color 0.2s;
+    cursor: pointer;
 }
 
 .forgotPassword:hover {
-    color: #495057;
+    color: #764ba2;
     text-decoration: underline;
 }
 
-/* Submit Button */
 .submitButton {
     width: 100%;
-    padding: 14px;
-    background: #495057;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    border-radius: 6px;
-    font-size: 16px;
+    border-radius: 10px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-transform: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35);
+    position: relative;
+    overflow: hidden;
+}
+
+.submitButton::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
 }
 
 .submitButton:hover:not(:disabled) {
-    background: #3d4146;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.45);
+}
+
+.submitButton:hover:not(:disabled)::before {
+    left: 100%;
 }
 
 .submitButton:active:not(:disabled) {
-    background: #343a40;
+    transform: translateY(0);
 }
 
 .submitButton:disabled {
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: not-allowed;
 }
 
@@ -189,33 +282,71 @@
     }
 }
 
-/* Create Account Link */
 .createAccountLink {
     text-align: center;
     font-size: 14px;
-    color: #212529;
+    color: #6c757d;
     margin-top: 24px;
 }
 
 .createAccountLink a {
-    color: #212529;
+    color: #667eea;
     text-decoration: none;
+    font-weight: 600;
     transition: color 0.2s;
 }
 
 .createAccountLink a:hover {
-    color: #495057;
+    color: #764ba2;
     text-decoration: underline;
 }
 
-/* Responsive Design */
-@media (max-width: 480px) {
+/* ─── RESPONSIVE DESIGN ────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .loginContainer {
+        padding: 40px 24px;
+        border-radius: 12px;
+    }
+
     .loginTitle {
-        font-size: 32px;
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    .loginContainer::before {
+        margin-bottom: 24px;
+    }
+
+    .formLabel {
+        font-size: 12px;
+    }
+
+    .formInput {
+        padding: 11px 14px;
+        font-size: 14px;
+    }
+
+    .passwordToggle {
+        right: 10px;
+    }
+
+    .submitButton {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .loginPageContainer {
+        padding: 16px;
     }
 
     .loginContainer {
-        max-width: 100%;
+        padding: 32px 20px;
+    }
+
+    .loginTitle {
+        font-size: 24px;
     }
 }
 

@@ -1,8 +1,3 @@
-/**
- * CONSULTLY HEADER - Lightweight Navigation
- * Shows three menu items: Home, Profile, Become a Consultant
- */
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./ConsultlyHeader.css";
@@ -11,6 +6,7 @@ export default function ConsultlyHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("consultant_logged_in") === "true";
@@ -19,6 +15,7 @@ export default function ConsultlyHeader() {
 
   const handleNavigation = (path) => {
     navigate(path);
+    setMobileMenuOpen(false);
   };
 
   const handleLogout = () => {
@@ -26,6 +23,7 @@ export default function ConsultlyHeader() {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
     navigate("/home");
+    setMobileMenuOpen(false);
   };
 
   const isActive = (path) => {
@@ -35,50 +33,66 @@ export default function ConsultlyHeader() {
   return (
     <header className="consultly-header">
       <div className="consultly-header-container">
-        <div className="consultly-header-nav">
-          {/* HOME: Our Consultants */}
+        {/* LOGO SECTION */}
+        <div className="consultly-logo-section">
+          <div className="consultly-logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="8" fill="#4a90e2"/>
+              <text x="50%" y="50%" fontSize="18" fontWeight="bold" fill="white" textAnchor="middle" dominantBaseline="middle">C</text>
+            </svg>
+            <span className="consultly-brand">Consultly</span>
+          </div>
+        </div>
+
+        {/* MOBILE MENU TOGGLE */}
+        <button
+          className="consultly-mobile-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        {/* NAVIGATION SECTION */}
+        <nav className={`consultly-nav ${mobileMenuOpen ? "mobile-open" : ""}`}>
           <button
             className={`consultly-nav-item ${isActive("/home")}`}
             onClick={() => handleNavigation("/home")}
           >
-            <span>Home</span>
+            Home
           </button>
 
-          {/* PROFILE */}
           {!isLoggedIn && (
             <button
               className={`consultly-nav-item ${isActive("/profile")}`}
               onClick={() => handleNavigation("/profile")}
             >
-              <span>Profile</span>
+              My Profile
             </button>
           )}
 
-          {/* BECOME A CONSULTANT or DASHBOARD */}
           {isLoggedIn ? (
-            <div className="consultly-nav-item-group">
+            <>
               <button
-                className="consultly-nav-item consultly-primary"
+                className={`consultly-nav-item ${isActive("/consultant-dashboard")}`}
                 onClick={() => handleNavigation("/consultant-dashboard")}
               >
-                <span>Dashboard</span>
+                Dashboard
               </button>
-              <button
-                className="consultly-nav-logout"
-                onClick={handleLogout}
-              >
-                <span>Logout</span>
+              <button className="consultly-nav-logout" onClick={handleLogout}>
+                Logout
               </button>
-            </div>
+            </>
           ) : (
             <button
               className="consultly-nav-item consultly-primary"
               onClick={() => handleNavigation("/login")}
             >
-              <span>Become a Consultant</span>
+              Become Consultant
             </button>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );
