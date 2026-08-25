@@ -87,9 +87,9 @@ function ConsultlyWidget() {
           <Route
             path="/home"
             element={
-              <StorefrontShell>
+              // <StorefrontShell>
                 <ConsultantListing />
-              </StorefrontShell>
+              // </StorefrontShell>
             }
           />
 
@@ -97,9 +97,9 @@ function ConsultlyWidget() {
           <Route
             path="/profile"
             element={
-              <StorefrontShell>
+              // <StorefrontShell>
                 <ProfileSection />
-              </StorefrontShell>
+              // </StorefrontShell>
             }
           >
             <Route index element={<div>Voucher</div>} />

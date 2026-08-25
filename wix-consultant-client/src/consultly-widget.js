@@ -51,12 +51,14 @@ class ConsultlyWidgetElement extends HTMLElement {
     if (this._mounted) return;
     this._mounted = true;
 
-    console.log("✅ [CONSULTLY] Mounted (lightweight, fast!)");
+    console.log("✅ [CONSULTLY] Custom element mounted");
 
-    const instanceId = this.getAttribute("instance") || localStorage.getItem("wix_instance") || "test-instance-dev-build";
+    const instanceId = this.getAttribute("instance") || localStorage.getItem("wix_instance");
     if (instanceId) {
-      console.log("[CONSULTLY] Received instance:", instanceId.slice(0, 20) + "...");
+      console.log("[CONSULTLY] Instance from Wix:", instanceId.slice(0, 20) + "...");
       localStorage.setItem("wix_instance", instanceId);
+    } else {
+      console.warn("[CONSULTLY] No instance attribute from Wix - will wait for context via postMessage");
     }
 
     if (!this._reactRoot) {

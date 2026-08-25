@@ -7,7 +7,6 @@ export default function ConsultlyHeader() {
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   useEffect(() => {
     const loggedIn = localStorage.getItem("consultant_logged_in") === "true";
     setIsLoggedIn(loggedIn);

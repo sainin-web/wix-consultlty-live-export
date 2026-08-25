@@ -1,17 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Post-build script for admin bundle
+ * Post-build script for admin bundle - SIMPLIFIED
  *
- * After craco builds the admin dashboard to build/, this script:
- * 1. The admin build overwrote build/index.html (because both go to same dir)
- * 2. We need to preserve the public widget index.html and move admin to admin/
- * 3. We use the backed-up public index.html or rebuild from template
- *
- * Result:
- * - Public widget: build/index.html (with PUBLIC_URL=/ asset paths)
- * - Admin dashboard: build/admin/index.html (with PUBLIC_URL=/admin/ asset paths)
- * - Shared assets: build/static/
+ * After admin build completes:
+ * 1. Current build/index.html is the admin version
+ * 2. Copy it to build/admin/index.html
+ * 3. Restore build/index.html from backed-up public version
+ * 4. Keep build/static/ shared for both
  */
 
 const fs = require('fs');
@@ -21,108 +17,60 @@ const buildDir = path.resolve(__dirname, '../build');
 const cacheDir = path.resolve(__dirname, '../.buildcache');
 const adminDir = path.resolve(buildDir, 'admin');
 const currentIndexPath = path.join(buildDir, 'index.html');
-const currentStaticDir = path.join(buildDir, 'static');
 const publicBackupPath = path.join(cacheDir, 'public-index.html');
+const publicStaticBackupDir = path.join(cacheDir, 'public-static');
 
-console.log('\n[POST-BUILD ADMIN] Organizing build output...\n');
+console.log('\n[POST-BUILD ADMIN] Processing build output...\n');
 
-// Create admin directory if it doesn't exist
+// 1. Create admin directory
 if (!fs.existsSync(adminDir)) {
   fs.mkdirSync(adminDir, { recursive: true });
   console.log(`[POST-BUILD ADMIN] ✓ Created ${adminDir}`);
 }
 
-// The current index.html is the admin version (from this build)
-// Save it to admin/index.html
+// 2. Save current index.html (admin version) to admin/index.html
 if (fs.existsSync(currentIndexPath)) {
   const destIndex = path.join(adminDir, 'index.html');
-
   let html = fs.readFileSync(currentIndexPath, 'utf8');
-
   html = html.replace(/%PUBLIC_URL%/g, '/admin');
-
   fs.writeFileSync(destIndex, html);
-
-  console.log(
-    `[POST-BUILD ADMIN] ✓ Saved admin index to admin/index.html with /admin asset paths`
-  );
+  console.log(`[POST-BUILD ADMIN] ✓ Saved admin dashboard to admin/index.html`);
 }
-// Copy static directory to admin/static/ for the /admin/static/ paths in HTML
+
+// 3. Copy admin static to admin/static (same structure)
+const currentStaticDir = path.join(buildDir, 'static');
 const adminStaticDir = path.join(adminDir, 'static');
-if (!fs.existsSync(adminStaticDir) && fs.existsSync(currentStaticDir)) {
-  copyDirRecursive(currentStaticDir, adminStaticDir);
-  console.log(`[POST-BUILD ADMIN] ✓ Copied static assets to admin/static/`);
+
+if (fs.existsSync(currentStaticDir)) {
+  const copyDir = (src, dst) => {
+    if (!fs.existsSync(dst)) fs.mkdirSync(dst, { recursive: true });
+    fs.readdirSync(src).forEach(file => {
+      const srcPath = path.join(src, file);
+      const dstPath = path.join(dst, file);
+      const stat = fs.statSync(srcPath);
+      if (stat.isDirectory()) {
+        copyDir(srcPath, dstPath);
+      } else if (!fs.existsSync(dstPath)) {
+        fs.copyFileSync(srcPath, dstPath);
+      }
+    });
+  };
+
+  copyDir(currentStaticDir, adminStaticDir);
+  console.log(`[POST-BUILD ADMIN] ✓ Copied static to admin/static/`);
 }
 
-// Copy manifest.json and other root files to admin/
-const rootFiles = ['manifest.json', 'favicon.ico', 'robots.txt', 'firebase-messaging-sw.js'];
-rootFiles.forEach(file => {
-  const srcFile = path.join(buildDir, file);
-  const destFile = path.join(adminDir, file);
-  if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
-    fs.copyFileSync(srcFile, destFile);
-    console.log(`[POST-BUILD ADMIN] ✓ Copied ${file} to admin/`);
-  }
-});
-
-// Helper to copy directory recursively
-function copyDirRecursive(src, dst) {
-  if (!fs.existsSync(dst)) {
-    fs.mkdirSync(dst, { recursive: true });
-  }
-  const files = fs.readdirSync(src);
-  files.forEach(file => {
-    const srcPath = path.join(src, file);
-    const dstPath = path.join(dst, file);
-    if (fs.statSync(srcPath).isDirectory()) {
-      copyDirRecursive(srcPath, dstPath);
-    } else {
-      fs.copyFileSync(srcPath, dstPath);
-    }
-  });
-}
-
-// Restore the public widget index.html from backup if it exists
-const publicStaticBackupDir = path.join(cacheDir, 'public-static');
+// 4. Restore public widget index.html from backup
 if (fs.existsSync(publicBackupPath)) {
   fs.copyFileSync(publicBackupPath, currentIndexPath);
-  console.log(`[POST-BUILD ADMIN] ✓ Restored public widget index.html from backup`);
+  console.log(`[POST-BUILD ADMIN] ✓ Restored public widget index.html`);
 } else {
-  console.warn(`[POST-BUILD ADMIN] ⚠️  WARNING: Public index.html backup not found!`);
+  console.warn(`[POST-BUILD ADMIN] ⚠️  WARNING: Public backup not found!`);
 }
 
-// Restore the public widget static/ directory from backup
-if (fs.existsSync(publicStaticBackupDir)) {
-  // Remove admin's static (which has admin files)
-  if (fs.existsSync(currentStaticDir)) {
-    const rimraf = (dir) => {
-      if (fs.existsSync(dir)) {
-        fs.readdirSync(dir).forEach(file => {
-          const fullPath = path.join(dir, file);
-          if (fs.lstatSync(fullPath).isDirectory()) {
-            rimraf(fullPath);
-          } else {
-            fs.unlinkSync(fullPath);
-          }
-        });
-        fs.rmdirSync(dir);
-      }
-    };
-    rimraf(currentStaticDir);
-  }
-
-  // Copy public static back
-  copyDirRecursive(publicStaticBackupDir, currentStaticDir);
-  console.log(`[POST-BUILD ADMIN] ✓ Restored public static/ directory to build/static/`);
-} else {
-  console.warn(`[POST-BUILD ADMIN] ⚠️  WARNING: Public static/ backup not found!`);
-}
-
-console.log(`\n[POST-BUILD ADMIN] ✓ Build structure:`);
-console.log(`  └── build/`);
-console.log(`      ├── index.html (public widget with PUBLIC_URL=/)`);
-console.log(`      ├── static/ (shared CSS/JS)`);
-console.log(`      └── admin/`);
-console.log(`          └── index.html (admin dashboard with PUBLIC_URL=/admin/)\n`);
-
-console.log('[POST-BUILD ADMIN] ✓ Done.\n');
+console.log(`\n[POST-BUILD ADMIN] ✓ Done.\n`);
+console.log(`[POST-BUILD ADMIN] Final structure:`);
+console.log(`  build/index.html                 → Public widget (consultly)`);
+console.log(`  build/static/                    → Shared CSS/JS (consultly + admin)`);
+console.log(`  build/admin/index.html           → Admin dashboard`);
+console.log(`  build/admin/static/              → Admin assets (copy of root static)\n`);

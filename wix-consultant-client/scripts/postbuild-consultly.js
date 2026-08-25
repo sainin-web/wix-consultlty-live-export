@@ -91,4 +91,26 @@ const loaderPath = path.join(buildDir, 'consultly-widget.js');
 fs.writeFileSync(loaderPath, loaderCode);
 console.log(`[POST-BUILD CONSULTLY] ✓ Created consultly-widget.js loader`);
 
+// 3. Create build/consultly/index.html with correct paths
+const consultlyDir = path.join(buildDir, 'consultly');
+if (!fs.existsSync(consultlyDir)) {
+  fs.mkdirSync(consultlyDir, { recursive: true });
+}
+
+const currentIndexPath = path.join(buildDir, 'index.html');
+const consultlyIndexPath = path.join(consultlyDir, 'index.html');
+
+if (fs.existsSync(currentIndexPath)) {
+  let html = fs.readFileSync(currentIndexPath, 'utf8');
+
+  // The current index.html has script tags with "/" paths
+  // We need to update them to "/" (they're already correct for root)
+  // No need to change - the bundle is loaded from /static/js/
+
+  fs.writeFileSync(consultlyIndexPath, html);
+  console.log(`[POST-BUILD CONSULTLY] ✓ Created build/consultly/index.html from build/index.html`);
+} else {
+  console.warn(`[POST-BUILD CONSULTLY] ⚠️  WARNING: build/index.html not found!`);
+}
+
 console.log('[POST-BUILD CONSULTLY] ✓ Done.\n');

@@ -16,8 +16,9 @@ const WixInstanceGuard = ({ children }) => {
             }
             setAllowed(true);
         } else {
-            console.warn("⛔ No Wix instance — access blocked");
-            setAllowed(false);
+            // Allow standalone mode (development/iframe embedding)
+            console.log("✅ Standalone mode - no Wix instance required");
+            setAllowed(true);
         }
     }, []);
 
