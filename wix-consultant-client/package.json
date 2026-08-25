@@ -37,10 +37,13 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "build:public-widget": "cross-env REACT_APP_BUILD_TARGET=public-widget PUBLIC_URL=/ craco build",
-    "build:consultly": "cross-env REACT_APP_BUILD_TARGET=consultly PUBLIC_URL=/ craco build && node scripts/postbuild-consultly.js",
-    "build:admin": "node scripts/prebuild-admin.js && cross-env REACT_APP_BUILD_TARGET=admin PUBLIC_URL=/admin/ craco build && node scripts/postbuild-admin.js",
-    "build:all": "npm run build:public-widget && npm run build:consultly && npm run build:admin",
+    "build:public-widget": "cross-env REACT_APP_BUILD_TARGET=public-widget CRACO_BUILD_FOLDER=.build-temp/public PUBLIC_URL=/ craco build",
+    "build:consultly": "cross-env REACT_APP_BUILD_TARGET=consultly CRACO_BUILD_FOLDER=.build-temp/consultly PUBLIC_URL=/ craco build && node scripts/postbuild-consultly.js",
+    "build:admin": "cross-env REACT_APP_BUILD_TARGET=admin CRACO_BUILD_FOLDER=.build-temp/admin PUBLIC_URL=/admin/ craco build && node scripts/postbuild-admin.js",
+    "build:assemble": "node scripts/assemble-build.js",
+    "build:validate": "node scripts/validate-build.js",
+    "build:all": "npm run build:clean && npm run build:public-widget && npm run build:consultly && npm run build:admin && npm run build:assemble && npm run build:validate",
+    "build:clean": "node scripts/clean-builds.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

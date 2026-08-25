@@ -17,8 +17,17 @@ module.exports = {
   webpack: {
     configure: (webpackConfig, { env, paths }) => {
       const buildTarget = process.env.REACT_APP_BUILD_TARGET || 'public-widget';
+      const buildFolder = process.env.CRACO_BUILD_FOLDER || 'build';
 
-      console.log(`\n[CRACO CONFIG] Building for: ${buildTarget}\n`);
+      console.log(`\n[CRACO CONFIG] Building for: ${buildTarget}`);
+      console.log(`[CRACO CONFIG] Output folder: ${buildFolder}\n`);
+
+      // Override CRA's default build folder if CRACO_BUILD_FOLDER is set
+      if (process.env.CRACO_BUILD_FOLDER) {
+        paths.appBuild = path.resolve(__dirname, buildFolder);
+        webpackConfig.output.path = path.resolve(__dirname, buildFolder);
+        console.log(`[CRACO CONFIG] Webpack output: ${webpackConfig.output.path}`);
+      }
 
       // Determine the correct entry point based on build target
       if (buildTarget === 'admin') {

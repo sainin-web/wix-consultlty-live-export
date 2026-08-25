@@ -8,8 +8,13 @@
 # testing
 /coverage
 
-# production
-/build
+# production builds
+# .build-temp/ contains isolated intermediate builds (temporary, NOT committed)
+# /build is the final assembled output (should be committed for deployment)
+.build-temp/
+
+# Legacy backup directory (no longer used with new isolated build architecture)
+.buildcache/
 
 # misc
 .DS_Store
