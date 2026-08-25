@@ -62,6 +62,10 @@ export const fetchConsultantListing = async (params = {}) => {
 
   perfMark('storefront-api-consultants-start');
 
+  console.log('📤 [STOREFRONT-API] ========== FETCH START ==========');
+  console.log('📤 [STOREFRONT-API] Input params:', params);
+  console.log('📤 [STOREFRONT-API] Base URL:', STOREFRONT_API);
+
   try {
     const config = {
       params: {
@@ -71,12 +75,18 @@ export const fetchConsultantListing = async (params = {}) => {
       },
     };
 
+    console.log('📤 [STOREFRONT-API] Request config.params:', config.params);
+
     // Include instance in authorization header if available
     if (instance) {
       config.headers = {
         Authorization: `Bearer ${instance}`,
       };
+      console.log('📤 [STOREFRONT-API] Authorization header set');
     }
+
+    const fullUrl = `${STOREFRONT_API}/consultants?page=${config.params.page}&limit=${config.params.limit}&shop_id=${config.params.shop_id}`;
+    console.log('📤 [STOREFRONT-API] Full request URL:', fullUrl);
 
     const response = await axios.get(
       `${STOREFRONT_API}/consultants`,
@@ -88,6 +98,13 @@ export const fetchConsultantListing = async (params = {}) => {
       'storefront-api-consultants-start',
       'storefront-api-consultants-end'
     );
+
+    console.log('🟢 [STOREFRONT-API] ========== RESPONSE RECEIVED ==========');
+    console.log('🟢 [STOREFRONT-API] Status:', response.status);
+    console.log('🟢 [STOREFRONT-API] Response data:', response.data);
+    console.log('🟢 [STOREFRONT-API] Consultants count:', response.data?.consultants?.length);
+    console.log('🟢 [STOREFRONT-API] Consultants:', response.data?.consultants);
+    console.log('🟢 [STOREFRONT-API] ========== END ==========');
 
     if (!response.data?.success) {
       throw new Error('API returned success=false');
@@ -105,7 +122,11 @@ export const fetchConsultantListing = async (params = {}) => {
     };
   } catch (error) {
     perfMark('storefront-api-consultants-error');
-    console.error('[STOREFRONT-API] Error:', error?.message || error);
+    console.error('❌ [STOREFRONT-API] FETCH ERROR:', {
+      message: error?.message || error,
+      response: error?.response?.data,
+      error: error,
+    });
     throw error;
   }
 };

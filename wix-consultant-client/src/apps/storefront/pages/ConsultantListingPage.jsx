@@ -41,14 +41,21 @@ function ConsultantListingPage() {
   useEffect(() => {
     perfMark('consultant-listing-page-mount');
 
+    console.log('🔍 [STOREFRONT-LISTING] ===========================================');
+    console.log('🔍 [STOREFRONT-LISTING] CONSULTANT LISTING COMPONENT MOUNTED');
+    console.log('🔍 [STOREFRONT-LISTING] shop_id:', shop_id);
+    console.log('🔍 [STOREFRONT-LISTING] instance:', instance ? instance.slice(0, 30) + '...' : 'undefined');
+    console.log('🔍 [STOREFRONT-LISTING] cached consultants:', consultants.length);
+    console.log('🔍 [STOREFRONT-LISTING] ===========================================');
+
     if (!shop_id) {
-      console.warn('[STOREFRONT-LISTING] No shop_id available');
+      console.error('🔴 [STOREFRONT-LISTING] CRITICAL: No shop_id available - cannot fetch consultants');
       return;
     }
 
     // Check if already cached (avoid duplicate fetches)
     if (consultants.length > 0) {
-      console.log('[STOREFRONT-LISTING] Using cached consultants:', consultants.length);
+      console.log('✅ [STOREFRONT-LISTING] Using cached consultants:', consultants.length);
       perfMeasure('consultant-listing-page-mount', 'consultant-listing-page-mount');
       return;
     }
@@ -57,6 +64,13 @@ function ConsultantListingPage() {
     const fetchData = async () => {
       dispatch(fetchStart());
       perfMark('consultant-listing-api-start');
+
+      console.log('📡 [STOREFRONT-LISTING] Starting API call with params:', {
+        page: 1,
+        limit: 20,
+        shop_id,
+        instance: instance ? instance.slice(0, 30) + '...' : 'none',
+      });
 
       try {
         const result = await fetchConsultantListing({
@@ -69,7 +83,15 @@ function ConsultantListingPage() {
         perfMark('consultant-listing-api-success');
         perfMeasure('consultant-listing-api-start', 'consultant-listing-api-success');
 
+        console.log('🟢 [STOREFRONT-LISTING] API Response received:', {
+          success: result.success,
+          consultantCount: result.consultants?.length,
+          pagination: result.pagination,
+          consultants: result.consultants,
+        });
+
         if (result.success) {
+          console.log('✨ [STOREFRONT-LISTING] Dispatching fetchSuccess to Redux...');
           dispatch(
             fetchSuccess({
               consultants: result.consultants,
@@ -81,7 +103,7 @@ function ConsultantListingPage() {
           );
 
           console.log(
-            '[STOREFRONT-LISTING] Loaded',
+            '✅ [STOREFRONT-LISTING] Successfully loaded',
             result.consultants.length,
             'consultants'
           );
@@ -92,7 +114,10 @@ function ConsultantListingPage() {
           throw new Error('API returned success=false');
         }
       } catch (err) {
-        console.error('[STOREFRONT-LISTING] Error:', err?.message || err);
+        console.error('❌ [STOREFRONT-LISTING] FETCH ERROR:', {
+          message: err?.message || err,
+          error: err,
+        });
         dispatch(fetchError(err?.message || 'Failed to load consultants'));
         perfMark('consultant-listing-api-error');
       } finally {
@@ -110,6 +135,41 @@ function ConsultantListingPage() {
 
   return (
     <div className="consultant-listing-page">
+      {/* DEBUG BOX - DEV ONLY */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          width: '400px',
+          maxHeight: '400px',
+          overflow: 'auto',
+          backgroundColor: '#1e1e1e',
+          color: '#00ff00',
+          border: '2px solid #00ff00',
+          borderRadius: '8px',
+          padding: '12px',
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          zIndex: 9999,
+          boxShadow: '0 0 20px rgba(0, 255, 0, 0.3)',
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#ffff00' }}>DEBUG BOX</div>
+          <div><strong>shop_id:</strong> {shop_id || 'MISSING'}</div>
+          <div><strong>instance:</strong> {instance ? instance.slice(0, 30) + '...' : 'MISSING'}</div>
+          <div><strong>loading:</strong> {loading.toString()}</div>
+          <div><strong>error:</strong> {error || 'none'}</div>
+          <div><strong>consultants:</strong> {consultants.length}</div>
+          <div><strong>total:</strong> {total}</div>
+          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #00ff00' }}>
+            <strong>Redux State:</strong>
+            <pre style={{ fontSize: '9px', margin: '4px 0', color: '#00ff00' }}>
+              {JSON.stringify({ consultants: consultants.length, page, total, hasMore, loading, error }, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="consultant-listing-hero">
         <h1>Find the Right Consultant</h1>

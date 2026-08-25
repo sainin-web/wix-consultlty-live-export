@@ -58,11 +58,14 @@ const getStorefrontConsultants = async (req, res) => {
     const authHeader = req.headers.authorization;
     const instance = authHeader?.split(' ')[1];
 
-    console.log('[STOREFRONT-API] Request:', { shop_id, instance: instance ? instance.substring(0, 20) + '...' : 'missing' });
+    console.log('🔍 [STOREFRONT-BACKEND] ========== REQUEST ==========');
+    console.log('🔍 [STOREFRONT-BACKEND] Endpoint: GET /api/storefront/consultants');
+    console.log('🔍 [STOREFRONT-BACKEND] Query params:', { shop_id, page: req.query.page, limit: req.query.limit });
+    console.log('🔍 [STOREFRONT-BACKEND] Instance header:', instance ? instance.substring(0, 20) + '...' : 'missing');
 
     // Validate shop_id
     if (!shop_id) {
-      console.warn('[STOREFRONT-API] No shop_id provided');
+      console.error('🔴 [STOREFRONT-BACKEND] CRITICAL: No shop_id provided');
       return res.status(400).json({
         success: false,
         message: 'shop_id is required',
@@ -76,15 +79,22 @@ const getStorefrontConsultants = async (req, res) => {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
     const skip = (page - 1) * limit;
 
+    console.log('🔍 [STOREFRONT-BACKEND] Pagination:', { page, limit, skip });
+
     t('pagination-setup');
+
+    // Build MongoDB query
+    const mongoQuery = {
+      shop_id: shop_id.toString(),
+      userType: 'consultant',
+      isActive: true,
+    };
+
+    console.log('🔍 [STOREFRONT-BACKEND] MongoDB Query:', mongoQuery);
 
     // Query: lightweight projection + lean
     const [consultants, totalCount] = await Promise.all([
-      User.find({
-        shop_id: shop_id.toString(),
-        userType: 'consultant',
-        isActive: true,
-      })
+      User.find(mongoQuery)
         .select(
           '_id fullname profession profileImage experience language chatPerMinute voicePerMinute videoPerMinute'
         )
@@ -92,20 +102,17 @@ const getStorefrontConsultants = async (req, res) => {
         .skip(skip)
         .limit(limit)
         .exec(),
-      User.countDocuments({
-        shop_id: shop_id.toString(),
-        userType: 'consultant',
-        isActive: true,
-      }),
+      User.countDocuments(mongoQuery),
     ]);
 
     t('consultants-query-complete');
 
-    console.log('[STOREFRONT-API] Query results:', {
+    console.log('🟢 [STOREFRONT-BACKEND] Query results:', {
       found: consultants.length,
       total: totalCount,
       page,
       limit,
+      consultants: consultants, // Log actual consultant objects
     });
 
     // Format response
