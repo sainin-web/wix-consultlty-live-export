@@ -156,7 +156,7 @@ const consultantController = async (req, res) => {
       dateOfBirth: new Date(body.dateOfBirth),
       pan_cardNumber: body.pancardNumber,
       profileImage: imageURL,
-      isActive: false,
+      isActive: true,
       agoraUid: randomAgoraUid,
       userType: "consultant",
       consultantStatus: false,
@@ -1214,6 +1214,56 @@ const tokenVerifyController = async (req, res) => {
   }
 };
 
+/**
+ * MIGRATION FUNCTION: Activate existing consultants with isActive=false
+ * This was needed because consultants were created with isActive: false by default,
+ * but the public storefront API only returns consultants with isActive: true.
+ *
+ * Called once to fix existing inactive consultants after the code change.
+ * @param {string} shopId - specific shop to migrate, or null for all shops
+ * @returns {Promise<{success: boolean, activated: number, message: string}>}
+ */
+const activateExistingConsultants = async (req, res) => {
+  try {
+    const { shopId } = req.body;
+
+    // Build query
+    const query = {
+      userType: "consultant",
+      isActive: false,
+    };
+
+    if (shopId) {
+      query.shop_id = shopId;
+    }
+
+    // Count before
+    const countBefore = await User.countDocuments(query);
+
+    // Activate all
+    const result = await User.updateMany(
+      query,
+      { $set: { isActive: true } }
+    );
+
+    console.log(`[MIGRATION] Activated ${result.modifiedCount} consultants. Before: ${countBefore}, Modified: ${result.modifiedCount}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully activated ${result.modifiedCount} consultant(s)`,
+      activated: result.modifiedCount,
+      checked: countBefore,
+    });
+  } catch (error) {
+    console.error("[MIGRATION] Error activating consultants:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error activating consultants",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   consultantController,
   getConsultant,
@@ -1236,4 +1286,5 @@ module.exports = {
   getWithdrawalRequest,
   getMonthlyRevenueController,
   tokenVerifyController,
+  activateExistingConsultants,
 };
