@@ -9,28 +9,51 @@ export const fetchConsultants = createAsyncThunk(
   async ({ instance, page = 1, limit = 12 }) => {
     perfMark('api:consultant-fetch-start');
 
-    const response = await axios.get(
-      `${process.env.REACT_APP_BACKEND_HOST}/api/consultant/wix-store-front`,
-      {
+    const authToken = instance || localStorage.getItem("wix_instance") || "";
+    const apiUrl = `${process.env.REACT_APP_BACKEND_HOST}/api/consultant/wix-store-front`;
+
+    console.log("[API-DEBUG] fetchConsultants called with:", { instance, page, limit });
+    console.log("[API-DEBUG] Using authToken:", authToken.substring(0, 20) + "...");
+    console.log("[API-DEBUG] Calling endpoint:", apiUrl);
+
+    try {
+      const response = await axios.get(apiUrl, {
         headers: {
-          Authorization: `Bearer ${instance || localStorage.getItem("wix_instance") || ""}`,
+          Authorization: `Bearer ${authToken}`,
         },
         params: {
           page,
           limit,
         },
-      },
-    );
+      });
 
-    perfMark('api:consultant-fetch-end');
-    perfMeasure('api:consultant-fetch-start', 'api:consultant-fetch-end');
+      perfMark('api:consultant-fetch-end');
+      perfMeasure('api:consultant-fetch-start', 'api:consultant-fetch-end');
 
-    console.log("[PERF] Consultant API response:", {
-      count: response.data?.findConsultant?.length,
-      pagination: response.data?.pagination,
-    });
+      console.log("[API-DEBUG] Response received:", {
+        status: response.status,
+        statusText: response.statusText,
+        dataKeys: response.data ? Object.keys(response.data) : "null",
+        consultantCount: response.data?.findConsultant?.length || 0,
+        fullResponse: response.data
+      });
 
-    return response.data;
+      console.log("[PERF] Consultant API response:", {
+        count: response.data?.findConsultant?.length,
+        pagination: response.data?.pagination,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("[API-ERROR] fetchConsultants failed:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorData: error.response?.data,
+        fullError: error
+      });
+      throw error;
+    }
   },
 );
 

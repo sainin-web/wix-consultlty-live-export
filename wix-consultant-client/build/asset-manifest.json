@@ -1,9 +1,9 @@
 {
   "files": {
-    "main.css": "/static/css/main.bb260376.css",
-    "main.js": "/static/js/consultly-main.94873567.js",
+    "main.css": "/static/css/main.a3b5a492.css",
+    "main.js": "/static/js/consultly-main.59086c50.js",
     "static/css/532.efa58b22.chunk.css": "/static/css/532.efa58b22.chunk.css",
-    "static/js/consultly-532.595af0bb.chunk.js": "/static/js/consultly-532.595af0bb.chunk.js",
+    "static/js/consultly-532.f133dd8c.chunk.js": "/static/js/consultly-532.f133dd8c.chunk.js",
     "static/js/consultly-564.bc0a45ee.chunk.js": "/static/js/consultly-564.bc0a45ee.chunk.js",
     "static/css/455.a83d710b.chunk.css": "/static/css/455.a83d710b.chunk.css",
     "static/js/consultly-455.df3705a0.chunk.js": "/static/js/consultly-455.df3705a0.chunk.js",
@@ -26,10 +26,10 @@
     "static/js/consultly-429.5b0ecfee.chunk.js": "/static/js/consultly-429.5b0ecfee.chunk.js",
     "static/js/consultly-647.d17ff69d.chunk.js": "/static/js/consultly-647.d17ff69d.chunk.js",
     "index.html": "/index.html",
-    "main.bb260376.css.map": "/static/css/main.bb260376.css.map",
-    "consultly-main.94873567.js.map": "/static/js/consultly-main.94873567.js.map",
+    "main.a3b5a492.css.map": "/static/css/main.a3b5a492.css.map",
+    "consultly-main.59086c50.js.map": "/static/js/consultly-main.59086c50.js.map",
     "532.efa58b22.chunk.css.map": "/static/css/532.efa58b22.chunk.css.map",
-    "consultly-532.595af0bb.chunk.js.map": "/static/js/consultly-532.595af0bb.chunk.js.map",
+    "consultly-532.f133dd8c.chunk.js.map": "/static/js/consultly-532.f133dd8c.chunk.js.map",
     "consultly-564.bc0a45ee.chunk.js.map": "/static/js/consultly-564.bc0a45ee.chunk.js.map",
     "455.a83d710b.chunk.css.map": "/static/css/455.a83d710b.chunk.css.map",
     "consultly-455.df3705a0.chunk.js.map": "/static/js/consultly-455.df3705a0.chunk.js.map",
@@ -53,7 +53,7 @@
     "consultly-647.d17ff69d.chunk.js.map": "/static/js/consultly-647.d17ff69d.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.bb260376.css",
-    "static/js/consultly-main.94873567.js"
+    "static/css/main.a3b5a492.css",
+    "static/js/consultly-main.59086c50.js"
   ]
 }

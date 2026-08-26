@@ -46,17 +46,29 @@ function ConsultantListing() {
   // Load consultants and vouchers in parallel on mount (with cache check)
   // Only fetch once when component mounts
   useEffect(() => {
-    if (!instance || !shop_id) return;
+    console.log("[STOREFRONT-DEBUG] useEffect triggered - instance:", instance, "shop_id:", shop_id);
+
+    if (!instance || !shop_id) {
+      console.warn("[STOREFRONT-DEBUG] Skipping fetch - missing instance or shop_id", { instance, shop_id });
+      return;
+    }
 
     perfMark('storefront:fetch-start');
 
     // Only fetch if data is not already in Redux
     const dispatchActions = [];
 
+    console.log("[STOREFRONT-DEBUG] Current Redux consultants state:", {
+      hasData: !!consultants?.findConsultant,
+      count: consultants?.findConsultant?.length || 0,
+      fullData: consultants
+    });
+
     if (!consultants?.findConsultant || consultants.findConsultant.length === 0) {
-      console.log("[STOREFRONT] Fetching consultants for shop:", shop_id);
+      console.log("[STOREFRONT] Fetching consultants for shop:", shop_id, "instance:", instance);
+      console.log("[STOREFRONT-DEBUG] Calling fetchConsultants with:", { instance, page: 1, limit: 12 });
       dispatchActions.push(
-        dispatch(fetchConsultants({ adminIdLocal: shop_id, instance }))
+        dispatch(fetchConsultants({ instance, page: 1, limit: 12 }))
       );
     } else {
       console.log("[STOREFRONT] Using cached consultants:", consultants.findConsultant.length);

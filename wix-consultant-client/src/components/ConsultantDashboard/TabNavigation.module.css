@@ -1,56 +1,25 @@
-/* Dashboard Wrapper — content height for Wix iframe (no 100vh loop) */
+/* Dashboard Wrapper — Full viewport height for dashboard mode */
 .dashboardWrapper {
-    min-height: 500px;
-    height: auto;
+    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
     background-color: #f5f6fa;
-    /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif; */
     padding: 0;
-    position: relative;
-    /* border: 1px solid blue; */
-    /* margin-top: 10px; */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
 }
 
 /* Wix iframe: fill parent height, white panel stretches full area */
 .dashboardEmbed {
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-    height: 100%;
-    background-color: #ffffff;
-    box-sizing: border-box;
-}
-
-.dashboardEmbed .mainContainer {
-    flex: 1;
-    min-height: 0;
-    position: relative;
-    display: flex;
-    align-self: stretch;
-    width: 100%;
-}
-
-.dashboardEmbed .sideNav {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    height: 100%;
-    border-radius: 0;
-}
-
-.dashboardEmbed .contentArea {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.dashboardEmbed .content {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    /* Inherits 100vh from dashboardWrapper */
 }
 
 /* Video Call Mode - Full Screen */
@@ -140,24 +109,19 @@
 
 /* Main Container */
 .mainContainer {
-    max-width: 100%;
-    margin: 0 auto;
+    flex: 1;
+    min-height: 0;
     display: flex;
-    gap: 24px;
+    gap: 0;
     background: white;
     border-radius: 0;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     overflow: hidden;
-    min-height: 0;
-    height: auto;
+    position: relative;
 }
 
 /* Side Navigation Tabs - Light Theme */
 .sideNav {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    bottom: 0;
+    position: relative;
     width: 260px;
     height: 100%;
     background: #f8f9fa;
@@ -165,8 +129,10 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    border-radius: 16px 0 0 16px;
+    border-radius: 0;
     border-right: 1px solid #e9ecef;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Profile Section */
@@ -340,12 +306,12 @@
 
 /* Content Area */
 .contentArea {
-    margin-left: 260px;
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     background: white;
-    border-radius: 0 16px 16px 0;
+    border-radius: 0;
     overflow: hidden;
 }
 

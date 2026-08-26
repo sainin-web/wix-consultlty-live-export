@@ -14,7 +14,21 @@ export function ConsultantCard({
 }) {
   const [imageError, setImageError] = useState(false);
 
-  if (!consultant) return null;
+  // DEBUG: Log consultant data
+  console.log("[CONSULTANT-CARD-DEBUG] Card rendered with consultant:", {
+    id: consultant?.id,
+    name: consultant?.name,
+    profession: consultant?.profession,
+    isActive: consultant?.isActive,
+    hasImage: !!consultant?.image,
+    shop_id: consultant?.shop_id,
+    fullData: consultant
+  });
+
+  if (!consultant) {
+    console.warn("[CONSULTANT-CARD-DEBUG] No consultant data provided");
+    return null;
+  }
 
   const handleImageError = () => {
     setImageError(true);
