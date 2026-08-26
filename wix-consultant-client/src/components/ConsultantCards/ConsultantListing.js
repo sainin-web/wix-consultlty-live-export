@@ -6,6 +6,7 @@ import { fetchVoucherData } from "../Redux/slices/UserSlices";
 import { checkUserBalance, openCallPage } from "../middle-ware/OpenCallingPage";
 import { getCustomerId } from "../../utils/wixStorage";
 import { useWixUser } from "../../useContext/WixUserContext";
+import { useWixInstance } from "../../useContext/WixInstanceContext";
 import { ConsultantGrid } from "./ConsultantGrid";
 import { LoadingState } from "./LoadingState";
 import { EmptyState } from "./EmptyState";
@@ -21,6 +22,11 @@ import "./ConsultantListing.css";
  * - Renders skeleton immediately (does not wait for API)
  * - Socket is NOT initialized for storefront (only for chat/calls)
  * - Uses Redux cache to prevent duplicate API calls
+ *
+ * WIX INSTANCE HANDLING:
+ * - Waits for Wix instance context to be ready
+ * - Automatically fetches when instance becomes available
+ * - Shows loading state while waiting for Wix context
  */
 function ConsultantListing() {
   const dispatch = useDispatch();
@@ -33,26 +39,42 @@ function ConsultantListing() {
   );
   const { voucherData } = useSelector((state) => state.users);
 
-  const shop_id = localStorage.getItem("wix_id");
-  const instance = localStorage.getItem("wix_instance") || "";
+  // Get Wix context (instance and shop_id) - this waits for async Wix delivery
+  const wixInstance = useWixInstance();
+  const { instance, shopId, isContextReady, isLoading: isContextLoading } = wixInstance;
 
   const [loginPrompt, setLoginPrompt] = useState(false);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   // Mark storefront component mount
   useEffect(() => {
     perfMark('storefront:mount');
   }, []);
 
-  // Load consultants and vouchers in parallel on mount (with cache check)
-  // Only fetch once when component mounts
+  // Load consultants and vouchers in parallel
+  // Waits for Wix context to be ready, then fetches
   useEffect(() => {
-    console.log("[STOREFRONT-DEBUG] useEffect triggered - instance:", instance, "shop_id:", shop_id);
+    console.log("[STOREFRONT-DEBUG] Effect running - context ready:", isContextReady, "instance:", instance ? instance.slice(0, 20) + "..." : "missing", "shopId:", shopId);
 
-    if (!instance || !shop_id) {
-      console.warn("[STOREFRONT-DEBUG] Skipping fetch - missing instance or shop_id", { instance, shop_id });
+    // Wait for Wix context to load
+    if (isContextLoading) {
+      console.log("[STOREFRONT-DEBUG] Still waiting for Wix context...");
       return;
     }
 
+    // Wix context loaded, check if we have required data
+    if (!isContextReady || !instance || !shopId) {
+      console.warn("[STOREFRONT-DEBUG] Wix context loaded but missing data", { isContextReady, hasInstance: !!instance, hasShopId: !!shopId });
+      return;
+    }
+
+    // Only fetch once
+    if (hasAttemptedFetch) {
+      console.log("[STOREFRONT-DEBUG] Already attempted fetch, skipping");
+      return;
+    }
+
+    setHasAttemptedFetch(true);
     perfMark('storefront:fetch-start');
 
     // Only fetch if data is not already in Redux
@@ -61,12 +83,11 @@ function ConsultantListing() {
     console.log("[STOREFRONT-DEBUG] Current Redux consultants state:", {
       hasData: !!consultants?.findConsultant,
       count: consultants?.findConsultant?.length || 0,
-      fullData: consultants
     });
 
     if (!consultants?.findConsultant || consultants.findConsultant.length === 0) {
-      console.log("[STOREFRONT] Fetching consultants for shop:", shop_id, "instance:", instance);
-      console.log("[STOREFRONT-DEBUG] Calling fetchConsultants with:", { instance, page: 1, limit: 12 });
+      console.log("[STOREFRONT] Fetching consultants for shop:", shopId);
+      console.log("[STOREFRONT-DEBUG] Calling fetchConsultants with:", { instance: instance.slice(0, 20) + "...", page: 1, limit: 12 });
       dispatchActions.push(
         dispatch(fetchConsultants({ instance, page: 1, limit: 12 }))
       );
@@ -75,8 +96,8 @@ function ConsultantListing() {
     }
 
     if (!voucherData) {
-      console.log("[STOREFRONT] Fetching voucher data for shop:", shop_id);
-      dispatchActions.push(dispatch(fetchVoucherData(shop_id)));
+      console.log("[STOREFRONT] Fetching voucher data for shop:", shopId);
+      dispatchActions.push(dispatch(fetchVoucherData(shopId)));
     } else {
       console.log("[STOREFRONT] Using cached voucher data");
     }
@@ -88,7 +109,7 @@ function ConsultantListing() {
         perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
       });
     }
-  }, []); // CRITICAL FIX: Empty dependency array - fetch ONLY ONCE on mount
+  }, [isContextLoading, isContextReady, instance, shopId, hasAttemptedFetch, dispatch, consultants, voucherData]);
 
   // Map consultants with proper data handling
   const mappedConsultants = React.useMemo(() => {
@@ -163,7 +184,7 @@ function ConsultantListing() {
       userId,
       consultantId,
       type: "chat",
-      shop: shop_id,
+      shop: shopId,
     });
 
     if (balance?.requiresLogin) {
@@ -185,8 +206,8 @@ function ConsultantListing() {
       receiverId,
       type,
       userId,
-      shop: shop_id,
-      storeUrl: shop_id,
+      shop: shopId,
+      storeUrl: shopId,
     });
   };
 
@@ -225,6 +246,8 @@ function ConsultantListing() {
           onViewProfile={handleViewProfile}
           onChat={handleChat}
           onCall={handleCall}
+          isContextLoading={isContextLoading}
+          isContextReady={isContextReady}
         />
       </>
     );
@@ -238,6 +261,8 @@ function ConsultantListing() {
       onViewProfile={handleViewProfile}
       onChat={handleChat}
       onCall={handleCall}
+      isContextLoading={isContextLoading}
+      isContextReady={isContextReady}
     />
   );
 }
@@ -252,6 +277,8 @@ function ConsultantListingContent({
   onViewProfile,
   onChat,
   onCall,
+  isContextLoading,
+  isContextReady,
 }) {
   return (
     <main className="consultant-listing-main">
@@ -263,7 +290,9 @@ function ConsultantListingContent({
         </div>
 
         {/* Content Section */}
-        {loading ? (
+        {isContextLoading || !isContextReady ? (
+          <LoadingState />
+        ) : loading ? (
           <LoadingState />
         ) : error ? (
           <ErrorState />

@@ -22,6 +22,7 @@ import { BrowserRouter } from "react-router-dom";
 import { store } from "./components/Redux/store/store";
 import ToastProvider from "./components/AlertModel/ToastProvider";
 import { WixUserProvider } from "./useContext/WixUserContext";
+import { WixInstanceProvider } from "./useContext/WixInstanceContext";
 
 function ConsultlyRoot() {
   return (
@@ -30,9 +31,11 @@ function ConsultlyRoot() {
         <ToastProvider>
           <Provider store={store}>
             <BrowserRouter>
-              <WixUserProvider>
-                <ConsultlyWidget />
-              </WixUserProvider>
+              <WixInstanceProvider>
+                <WixUserProvider>
+                  <ConsultlyWidget />
+                </WixUserProvider>
+              </WixInstanceProvider>
             </BrowserRouter>
           </Provider>
         </ToastProvider>
@@ -53,12 +56,13 @@ class ConsultlyWidgetElement extends HTMLElement {
 
     console.log("✅ [CONSULTLY] Custom element mounted");
 
+    // Try to get instance from attribute first (Wix provides this)
     const instanceId = this.getAttribute("instance") || localStorage.getItem("wix_instance");
     if (instanceId) {
-      console.log("[CONSULTLY] Instance from Wix:", instanceId.slice(0, 20) + "...");
+      console.log("[CONSULTLY] Instance available:", instanceId.slice(0, 20) + "...");
       localStorage.setItem("wix_instance", instanceId);
     } else {
-      console.warn("[CONSULTLY] No instance attribute from Wix - will wait for context via postMessage");
+      console.warn("[CONSULTLY] No instance attribute from Wix - waiting for context via postMessage or URL params");
     }
 
     if (!this._reactRoot) {
@@ -67,17 +71,62 @@ class ConsultlyWidgetElement extends HTMLElement {
 
     this._reactRoot.render(<ConsultlyRoot />);
 
+    // Listen for Wix postMessage with instance (in case it arrives after mount)
+    this._setupWixMessageListener();
+
     // Send height to parent Wix after mount
     this._sendHeightToWix();
   }
 
+  /**
+   * Handle Wix context delivered via postMessage
+   */
+  _setupWixMessageListener() {
+    const handleMessage = (event) => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+
+      // Check for instance in various postMessage formats
+      const instance = data.instance || data.wixInstance || data.payload?.instance;
+
+      if (instance && typeof instance === "string") {
+        console.log("[CONSULTLY-ELEMENT] Instance received from Wix postMessage:", instance.slice(0, 20) + "...");
+        localStorage.setItem("wix_instance", instance);
+        // Trigger storage event so React context picks up the change
+        window.dispatchEvent(new StorageEvent("storage", {
+          key: "wix_instance",
+          newValue: instance,
+          url: window.location.href
+        }));
+      }
+
+      // Also handle shop_id if provided
+      const shopId = data.shopId || data.shop_id || data.wix_id;
+      if (shopId && typeof shopId === "string") {
+        console.log("[CONSULTLY-ELEMENT] Shop ID received from postMessage:", shopId);
+        localStorage.setItem("wix_id", shopId);
+        window.dispatchEvent(new StorageEvent("storage", {
+          key: "wix_id",
+          newValue: shopId,
+          url: window.location.href
+        }));
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+  }
+
   attributeChangedCallback(name, oldVal, newVal) {
     if (name === "instance" && newVal && newVal !== oldVal) {
-      console.log("[CONSULTLY] Instance updated:", newVal.slice(0, 20) + "...");
+      console.log("[CONSULTLY-ELEMENT] Instance attribute changed:", newVal.slice(0, 20) + "...");
       localStorage.setItem("wix_instance", newVal);
-      if (this._reactRoot) {
-        this._reactRoot.render(<ConsultlyRoot />);
-      }
+      // Trigger storage event so React context picks up the change
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: "wix_instance",
+        newValue: newVal,
+        url: window.location.href
+      }));
     }
   }
 
