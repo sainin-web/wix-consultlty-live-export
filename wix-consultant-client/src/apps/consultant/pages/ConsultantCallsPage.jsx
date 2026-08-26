@@ -3,7 +3,6 @@
  */
 
 import React from 'react';
-import ConsultantSidebar from '../components/ConsultantSidebar';
 import '../styles/ConsultantCallsPage.css';
 
 function ConsultantCallsPage() {
@@ -14,13 +13,10 @@ function ConsultantCallsPage() {
   ]);
 
   return (
-    <div className="consultant-dashboard">
-      <ConsultantSidebar />
-
-      <main className="consultant-main">
-        <div className="consultant-header">
-          <h1>Calls & Chat History</h1>
-        </div>
+    <>
+      <div className="consultant-header">
+        <h1>Calls & Chat History</h1>
+      </div>
 
         <div className="calls-container">
           <table className="calls-table">
@@ -53,8 +49,7 @@ function ConsultantCallsPage() {
             </tbody>
           </table>
         </div>
-      </main>
-    </div>
+    </>
   );
 }
 

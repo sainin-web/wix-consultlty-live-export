@@ -82,13 +82,32 @@ const LoginForm = () => {
         formData,
       );
 
-      const { userData, token, secure_url, success } = response?.data;
+      const data = response?.data;
+      console.log('[LOGIN-FORM] FULL RESPONSE DATA:', JSON.stringify(data, null, 2));
 
-      console.log('[LOGIN-FORM] Response received:', { success, userId: userData?._id });
+      const { userData, token, secure_url, success } = data;
 
-      if (response.status === 200 && userData?._id && success) {
-        const userId = userData._id;
-        const shopId = userData.shop_id;
+      console.log('[LOGIN-FORM] Extracted fields:', {
+        success,
+        hasUserData: !!userData,
+        userData_id: userData?._id,
+        userData_shop_id: userData?.shop_id,
+        userData_keys: userData ? Object.keys(userData) : 'null',
+        token: token ? token.substring(0, 20) + '...' : 'missing'
+      });
+
+      if (response.status === 200 && userData && success) {
+        // Extract userId from various possible locations
+        const userId = userData._id || userData.id || userData.userId;
+        const shopId = userData.shop_id || userData.shopId;
+
+        console.log('[LOGIN-FORM] Extracted IDs:', { userId, shopId, hasUserId: !!userId });
+
+        if (!userId) {
+          console.error('[LOGIN-FORM] NO USER ID FOUND - userData contents:', userData);
+          setErrors({ email: "Login failed - invalid user data" });
+          return;
+        }
 
         console.log('[LOGIN-FORM] Authentication successful, saving session...');
 
@@ -97,7 +116,7 @@ const LoginForm = () => {
           shopId,
           token,
           secureUrl: secure_url,
-          displayName: userData.fullname,
+          displayName: userData.fullname || userData.email,
           displayEmail: userData.email,
         });
 

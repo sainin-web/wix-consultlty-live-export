@@ -2,9 +2,8 @@
  * Consultant Settings
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ConsultantSidebar from '../components/ConsultantSidebar';
 import '../styles/ConsultantSettingsPage.css';
 
 function ConsultantSettingsPage() {
@@ -18,7 +17,9 @@ function ConsultantSettingsPage() {
   const handleLogout = () => {
     localStorage.removeItem('consultant_logged_in');
     localStorage.removeItem('token');
-    navigate('/consultant/login');
+    localStorage.removeItem('wix_consultant_id');
+    localStorage.removeItem('wix_id');
+    navigate('/login', { replace: true });
   };
 
   const handleToggle = (setting) => {
@@ -29,13 +30,10 @@ function ConsultantSettingsPage() {
   };
 
   return (
-    <div className="consultant-dashboard">
-      <ConsultantSidebar />
-
-      <main className="consultant-main">
-        <div className="consultant-header">
-          <h1>Settings</h1>
-        </div>
+    <>
+      <div className="consultant-header">
+        <h1>Settings</h1>
+      </div>
 
         <div className="settings-section">
           <h2>Notifications</h2>
@@ -83,8 +81,7 @@ function ConsultantSettingsPage() {
           </button>
           <button className="btn-danger">Delete Account</button>
         </div>
-      </main>
-    </div>
+    </>
   );
 }
 

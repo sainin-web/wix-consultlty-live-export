@@ -2,8 +2,7 @@
  * Consultant Profile Editor
  */
 
-import React, { useState } from 'react';
-import ConsultantSidebar from '../components/ConsultantSidebar';
+import { useState } from 'react';
 import '../styles/ConsultantProfilePage.css';
 
 function ConsultantProfilePage() {
@@ -32,10 +31,7 @@ function ConsultantProfilePage() {
   };
 
   return (
-    <div className="consultant-dashboard">
-      <ConsultantSidebar />
-
-      <main className="consultant-main">
+    <>
         <div className="consultant-header">
           <h1>Edit Profile</h1>
         </div>
@@ -119,8 +115,7 @@ function ConsultantProfilePage() {
             </button>
           </div>
         </form>
-      </main>
-    </div>
+    </>
   );
 }
 

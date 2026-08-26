@@ -2,8 +2,7 @@
  * Consultant Availability Schedule
  */
 
-import React, { useState } from 'react';
-import ConsultantSidebar from '../components/ConsultantSidebar';
+import { useState } from 'react';
 import '../styles/ConsultantAvailabilityPage.css';
 
 function ConsultantAvailabilityPage() {
@@ -28,10 +27,7 @@ function ConsultantAvailabilityPage() {
   };
 
   return (
-    <div className="consultant-dashboard">
-      <ConsultantSidebar />
-
-      <main className="consultant-main">
+    <>
         <div className="consultant-header">
           <h1>Set Availability</h1>
           <p>Choose when you are available for calls and chats</p>
@@ -72,8 +68,7 @@ function ConsultantAvailabilityPage() {
         <button className="btn-primary" style={{ marginTop: '20px' }}>
           Save Availability
         </button>
-      </main>
-    </div>
+    </>
   );
 }
 

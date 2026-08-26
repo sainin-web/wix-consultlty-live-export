@@ -2,22 +2,17 @@
  * Consultant Earnings & Wallet
  */
 
-import React from 'react';
 import { useSelector } from 'react-redux';
-import ConsultantSidebar from '../components/ConsultantSidebar';
 import '../styles/ConsultantEarningsPage.css';
 
 function ConsultantEarningsPage() {
   const earnings = useSelector((state) => state.earnings);
 
   return (
-    <div className="consultant-dashboard">
-      <ConsultantSidebar />
-
-      <main className="consultant-main">
-        <div className="consultant-header">
-          <h1>Earnings & Wallet</h1>
-        </div>
+    <>
+      <div className="consultant-header">
+        <h1>Earnings & Wallet</h1>
+      </div>
 
         <div className="earnings-summary">
           <div className="earnings-card">
@@ -67,8 +62,7 @@ function ConsultantEarningsPage() {
             <p className="empty-state">No transactions yet</p>
           )}
         </div>
-      </main>
-    </div>
+    </>
   );
 }
 

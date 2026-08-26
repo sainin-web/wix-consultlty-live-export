@@ -168,12 +168,45 @@ function TabNavigation({ children }) {
   };
 
   const menuItems = [
+    // NEW Dashboard Sections
     {
       label: "Dashboard",
       path: "/consultant-dashboard",
       active: location.pathname === "/consultant-dashboard",
       icon: <HiOutlineSquares2X2 />,
     },
+    {
+      label: "Profile",
+      path: "/consultant-dashboard/profile",
+      active: location.pathname === "/consultant-dashboard/profile",
+      icon: <HiOutlineSquares2X2 />,
+    },
+    {
+      label: "Availability",
+      path: "/consultant-dashboard/availability",
+      active: location.pathname === "/consultant-dashboard/availability",
+      icon: <HiOutlineClipboardDocumentList />,
+    },
+    {
+      label: "Earnings",
+      path: "/consultant-dashboard/earnings",
+      active: location.pathname === "/consultant-dashboard/earnings",
+      icon: <HiOutlineBanknotes />,
+    },
+    {
+      label: "Calls",
+      path: "/consultant-dashboard/calls",
+      active: location.pathname.startsWith("/consultant-dashboard/calls"),
+      icon: <HiOutlineChatBubbleLeftRight />,
+    },
+    {
+      label: "Settings",
+      path: "/consultant-dashboard/settings",
+      active: location.pathname === "/consultant-dashboard/settings",
+      icon: <HiOutlineArrowDownTray />,
+    },
+
+    // OLD Dashboard Sections (Existing Functionality)
     {
       label: "Chats",
       path: "/consultant-dashboard/chats",
@@ -183,26 +216,19 @@ function TabNavigation({ children }) {
     {
       label: "Call Chat Logs",
       path: "/consultant-dashboard/call-chat-logs",
-      active: location.pathname.startsWith(
-        "/consultant-dashboard/call-chat-logs",
-      ),
+      active: location.pathname.startsWith("/consultant-dashboard/call-chat-logs"),
       icon: <HiOutlineClipboardDocumentList />,
     },
     {
       label: "Wallet Management",
       path: "/consultant-dashboard/consultant-wallet-logs",
-      active: location.pathname.startsWith(
-        "/consultant-dashboard/consultant-wallet-logs",
-      ),
+      active: location.pathname.startsWith("/consultant-dashboard/consultant-wallet-logs"),
       icon: <HiOutlineBanknotes />,
     },
-
     {
       label: "Withdrawal Request",
       path: "/consultant-dashboard/withdrawal-request-table",
-      active: location.pathname.startsWith(
-        "/consultant-dashboard/withdrawal-request-table",
-      ),
+      active: location.pathname.startsWith("/consultant-dashboard/withdrawal-request-table"),
       icon: <HiOutlineArrowDownTray />,
     },
   ];

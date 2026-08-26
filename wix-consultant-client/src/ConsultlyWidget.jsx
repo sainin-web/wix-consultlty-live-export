@@ -28,12 +28,21 @@ import wixResizer, { useWixResize } from "./integrations/wix/wixResize";
 // ── Lazy load components for smaller bundle ──
 const ConsultantListing = lazy(() => import("./components/ConsultantCards/ConsultantListing"));
 const ViewProfile = lazy(() => import("./components/ConsultantCards/ViewProfile"));
+
+// Dashboard Pages - NEW
 const DashboardPage = lazy(() => import("./apps/consultant/pages/ConsultantDashboardPage"));
-const ChatsPage = lazy(() => import("./apps/consultant/pages/ConsultantCallsPage"));
-const CallLogsConsultant = lazy(() => import("./apps/consultant/pages/ConsultantCallsPage"));
-const ConsultantWalletLogs = lazy(() => import("./apps/consultant/pages/ConsultantEarningsPage"));
-const WithdrawalRequestForm = lazy(() => import("./apps/consultant/pages/ConsultantCallsPage"));
-const WithdrawalRequestTable = lazy(() => import("./apps/consultant/pages/ConsultantCallsPage"));
+const ProfilePage = lazy(() => import("./apps/consultant/pages/ConsultantProfilePage"));
+const AvailabilityPage = lazy(() => import("./apps/consultant/pages/ConsultantAvailabilityPage"));
+const EarningsPage = lazy(() => import("./apps/consultant/pages/ConsultantEarningsPage"));
+const CallsPage = lazy(() => import("./apps/consultant/pages/ConsultantCallsPage"));
+const SettingsPage = lazy(() => import("./apps/consultant/pages/ConsultantSettingsPage"));
+
+// Dashboard Pages - OLD (Existing functionality)
+const ChatsPage = lazy(() => import("./components/ConsultantDashboard/ChatsPage"));
+const CallLogsConsultant = lazy(() => import("./components/ConsultantDashboard/CallChatLogsConsultant"));
+const ConsultantWalletLogs = lazy(() => import("./components/ConsultantDashboard/ConsultantWalletLogs"));
+const WithdrawalRequestForm = lazy(() => import("./components/ConsultantDashboard/WithdrawalRequestForm"));
+const WithdrawalRequestTable = lazy(() => import("./components/ConsultantDashboard/WithdrawalRequestTable"));
 
 function ConsultlyWidget() {
   const location = useLocation();
@@ -120,21 +129,20 @@ function ConsultlyWidget() {
 
           {/* ── CONSULTANT DASHBOARD: Full Screen (NO HEADER) ── */}
           <Route path="/consultant-dashboard" element={<TabNavigation />}>
+            {/* NEW Dashboard Sections */}
             <Route index element={<DashboardPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="availability" element={<AvailabilityPage />} />
+            <Route path="earnings" element={<EarningsPage />} />
+            <Route path="calls" element={<CallsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+
+            {/* OLD Dashboard Sections (Existing Functionality) */}
             <Route path="chats/:chatId?" element={<ChatsPage />} />
             <Route path="call-chat-logs" element={<CallLogsConsultant />} />
-            <Route
-              path="consultant-wallet-logs"
-              element={<ConsultantWalletLogs />}
-            />
-            <Route
-              path="withdrawal-request"
-              element={<WithdrawalRequestForm />}
-            />
-            <Route
-              path="withdrawal-request-table"
-              element={<WithdrawalRequestTable />}
-            />
+            <Route path="consultant-wallet-logs" element={<ConsultantWalletLogs />} />
+            <Route path="withdrawal-request" element={<WithdrawalRequestForm />} />
+            <Route path="withdrawal-request-table" element={<WithdrawalRequestTable />} />
           </Route>
 
           {/* ── ERROR: Fallback ── */}
