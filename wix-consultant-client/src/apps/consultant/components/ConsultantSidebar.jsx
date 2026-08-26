@@ -3,13 +3,25 @@
  */
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { logout } from '../store/consultantStore';
 import '../styles/ConsultantSidebar.css';
 
 function ConsultantSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const isActive = (path) => location.pathname.includes(path);
+
+  const handleLogout = () => {
+    console.log('[CONSULTANT-SIDEBAR] Logging out...');
+    // Clear Redux state
+    dispatch(logout());
+    // Redirect to login
+    navigate('/consultant/login', { replace: true });
+  };
 
   return (
     <aside className="consultant-sidebar">
@@ -64,11 +76,7 @@ function ConsultantSidebar() {
       <div className="consultant-sidebar-footer">
         <button
           className="logout-btn"
-          onClick={() => {
-            localStorage.removeItem('consultant_logged_in');
-            localStorage.removeItem('token');
-            window.location.href = '/consultant/login';
-          }}
+          onClick={handleLogout}
         >
           Logout
         </button>

@@ -20,7 +20,8 @@ const { consultantController,
    getWithdrawalRequest,
    getMonthlyRevenueController,
    tokenVerifyController,
-   activateExistingConsultants
+   activateExistingConsultants,
+   enableConsultantLoginAccess
 } = require("../Controller/consultantController")
 const consultantRoute = express.Router()
 const multer = require("multer");
@@ -50,6 +51,7 @@ consultantRoute.get("/find/consultant/withdrawal/request/:consultantId", authent
 consultantRoute.get("/find/monthly-revenue/:shop_id/:consultantId", getMonthlyRevenueController) 
 consultantRoute.get("/verify-token", authenticateToken, tokenVerifyController)
 consultantRoute.post("/migrate/activate-existing-consultants", activateExistingConsultants)
+consultantRoute.post("/migrate/enable-consultant-login", enableConsultantLoginAccess)
 
 
 module.exports = { consultantRoute }

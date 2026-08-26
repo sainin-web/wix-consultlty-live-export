@@ -28,7 +28,10 @@ const ConsultantProfile = lazy(() => import('./pages/ConsultantProfilePage'));
  * StorefrontApp: Routes for public marketplace only.
  */
 function StorefrontApp() {
+  console.log('🔵🔵🔵 [STOREFRONT-APP] RENDERING ROUTES 🔵🔵🔵');
+
   useEffect(() => {
+    console.log('🔵 [STOREFRONT-APP] MOUNTED - Setting up routes');
     perfMark('storefront-app-component-mount');
   }, []);
 
@@ -39,9 +42,14 @@ function StorefrontApp() {
         <Route
           path="/consultant/card"
           element={
-            <StorefrontShellMinimal>
-              <ConsultantListing />
-            </StorefrontShellMinimal>
+            <>
+              <div style={{position: 'fixed', top: '10px', left: '10px', background: 'yellow', padding: '10px', zIndex: 9999, fontWeight: 'bold'}}>
+                ROUTE MATCHED: /consultant/card
+              </div>
+              <StorefrontShellMinimal>
+                <ConsultantListing />
+              </StorefrontShellMinimal>
+            </>
           }
         />
 

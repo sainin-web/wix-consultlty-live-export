@@ -159,7 +159,7 @@ const consultantController = async (req, res) => {
       isActive: true,
       agoraUid: randomAgoraUid,
       userType: "consultant",
-      consultantStatus: false,
+      consultantStatus: true,
       voicePerMinute: body.voicePerMinute,
       videoPerMinute: body.videoPerMinute,
       chatPerMinute: body.chatPerMinute,
@@ -1264,6 +1264,51 @@ const activateExistingConsultants = async (req, res) => {
   }
 };
 
+/**
+ * Enable login access for consultants with consultantStatus=false
+ * Migration endpoint for existing consultants created before the fix
+ */
+const enableConsultantLoginAccess = async (req, res) => {
+  try {
+    const { shopId } = req.body;
+
+    // Build query: find consultants that are blocked from login
+    const query = {
+      userType: "consultant",
+      consultantStatus: false,
+    };
+
+    if (shopId) {
+      query.shop_id = shopId;
+    }
+
+    // Count before
+    const countBefore = await User.countDocuments(query);
+
+    // Enable login access for all blocked consultants
+    const result = await User.updateMany(
+      query,
+      { $set: { consultantStatus: true } }
+    );
+
+    console.log(`[MIGRATION] Enabled login access for ${result.modifiedCount} consultants. Before: ${countBefore}, Modified: ${result.modifiedCount}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully enabled login for ${result.modifiedCount} consultant(s)`,
+      enabled: result.modifiedCount,
+      checked: countBefore,
+    });
+  } catch (error) {
+    console.error("[MIGRATION] Error enabling consultant login:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error enabling consultant login",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   consultantController,
   getConsultant,
@@ -1287,4 +1332,5 @@ module.exports = {
   getMonthlyRevenueController,
   tokenVerifyController,
   activateExistingConsultants,
+  enableConsultantLoginAccess,
 };

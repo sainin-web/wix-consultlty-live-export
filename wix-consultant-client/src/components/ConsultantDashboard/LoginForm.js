@@ -75,16 +75,22 @@ const LoginForm = () => {
     setConsultantBlockedError("");
 
     try {
+      console.log('[LOGIN-FORM] Submitting login with email:', formData.email);
+
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_HOST}/api/api-consultant/login-consultant`,
         formData,
       );
 
-      const { userData, token, secure_url } = response?.data;
+      const { userData, token, secure_url, success } = response?.data;
 
-      if (response.status === 200 && userData?._id) {
+      console.log('[LOGIN-FORM] Response received:', { success, userId: userData?._id });
+
+      if (response.status === 200 && userData?._id && success) {
         const userId = userData._id;
         const shopId = userData.shop_id;
+
+        console.log('[LOGIN-FORM] Authentication successful, saving session...');
 
         setConsultantSession({
           id: userId,
@@ -99,12 +105,18 @@ const LoginForm = () => {
           role: SOCKET_ROLE.CONSULTANT,
           force: true,
         });
-        // openTokenWindow({ userId, shopId });
+
+        console.log('[LOGIN-FORM] Session saved, navigating to dashboard...');
+
+        // ✅ CRITICAL FIX: Navigate immediately after successful login
+        navigate(`/consultant-dashboard${q}`, { replace: true });
       } else {
+        console.error('[LOGIN-FORM] Login failed - invalid response');
         setErrors({ email: "Invalid email or password" });
       }
     } catch (err) {
       const msg = err?.response?.data?.message || "Something went wrong.";
+      console.error('[LOGIN-FORM] Error:', msg);
       setConsultantBlockedError(msg);
       setErrors({ email: msg });
     } finally {

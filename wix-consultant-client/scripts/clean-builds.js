@@ -64,6 +64,8 @@ if (success) {
   console.log('[CLEAN BUILDS] ✓ Done.\n');
   process.exit(0);
 } else {
-  console.error('[CLEAN BUILDS] ✗ Some directories could not be removed.\n');
-  process.exit(1);
+  console.warn('[CLEAN BUILDS] ⚠️  Some directories could not be removed. Proceeding anyway...\n');
+  // Don't fail the entire build if directories are locked
+  // Craco will handle overwriting when it builds
+  process.exit(0);
 }

@@ -28,6 +28,7 @@ function TabNavigation({ children }) {
   const [userId, setUserId] = useState();
   const [shopId, setShopId] = useState();
   const [showModal, setShowModal] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const dispatch = useDispatch();
   const [profile, setProfile] = useState({
     name: "",
@@ -41,12 +42,31 @@ function TabNavigation({ children }) {
   const shop = params.get("shop");
   const token = localStorage.getItem("token");
 
+  // ✅ Check authentication on mount
   useEffect(() => {
+    console.log('[TABNAV] Initializing - checking authentication...');
+
     const storedUserId = getConsultantId();
     const storedShopId = getShopId();
+    const isLoggedIn = localStorage.getItem('consultant_logged_in') === 'true';
+
+    console.log('[TABNAV] Auth state:', {
+      isLoggedIn,
+      token: token ? 'exists' : 'missing',
+      userId: storedUserId,
+      shopId: storedShopId
+    });
+
+    if (!token || !isLoggedIn) {
+      console.warn('[TABNAV] Not authenticated, redirecting to login');
+      navigate('/login', { replace: true });
+      return;
+    }
+
     setUserId(storedUserId);
     setShopId(storedShopId);
-  }, []);
+    setAuthLoading(false);
+  }, [navigate, token]);
 
   useEffect(() => {
     if (!shopId || !userId) return;
@@ -234,6 +254,28 @@ function TabNavigation({ children }) {
     localStorage.removeItem("shop");
     window.top.location.href = `${process.env.REACT_APP_FRONTEND_HOST}/login`;
   };
+
+  // ✅ Don't render until authentication is verified
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '400px',
+        fontSize: '18px',
+        color: '#666'
+      }}>
+        Loading dashboard...
+      </div>
+    );
+  }
+
+  // ✅ Don't render if not authenticated
+  if (!token || !userId) {
+    console.warn('[TABNAV] Missing authentication - page should not render');
+    return null;
+  }
 
   return (
     <Fragment>

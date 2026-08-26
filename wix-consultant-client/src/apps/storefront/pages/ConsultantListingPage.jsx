@@ -27,6 +27,8 @@ import ConsultantSkeleton from '../components/ConsultantSkeleton';
 import '../styles/ConsultantListingPage.css';
 
 function ConsultantListingPage() {
+  console.log('🟢🟢🟢 [CONSULTANT-LISTING-PAGE] COMPONENT RENDERED! 🟢🟢🟢');
+
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
   const { consultants, loading, error, page, total, hasMore } = useSelector(
@@ -36,6 +38,8 @@ function ConsultantListingPage() {
   const shop_id = searchParams.get('shop_id') || localStorage.getItem('wix_id');
   const instance = searchParams.get('instance') || localStorage.getItem('wix_instance');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  console.log('🟢 [CONSULTANT-LISTING-PAGE] INITIAL STATE:', { shop_id, instance, consultants: consultants.length, loading, error });
 
   // Fetch consultants on mount
   useEffect(() => {

@@ -1,9 +1,14 @@
 /**
  * Consultant Login Page
+ *
+ * Authenticates consultant with real backend API.
+ * On successful login, redirects immediately to dashboard.
+ * Dashboard loads its own data after navigation (don't block on API).
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { loginConsultant } from '../services/consultantAuthService';
 import '../styles/ConsultantLoginPage.css';
 
 function ConsultantLoginPage() {
@@ -12,6 +17,18 @@ function ConsultantLoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [redirecting, setRedirecting] = useState(false);
+
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const isLoggedIn = localStorage.getItem('consultant_logged_in') === 'true';
+
+    if (token && isLoggedIn) {
+      console.log('[CONSULTANT-LOGIN] Already authenticated, redirecting to dashboard');
+      navigate('/consultant/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,21 +36,54 @@ function ConsultantLoginPage() {
     setError('');
 
     try {
-      // Simulate login - replace with actual API call
-      if (email && password.length >= 6) {
+      console.log('[CONSULTANT-LOGIN] Logging in consultant:', email);
+
+      // Call real backend API
+      const response = await loginConsultant(email, password);
+
+      if (response.success && response.token) {
+        // Save authentication state
         localStorage.setItem('consultant_logged_in', 'true');
-        localStorage.setItem('token', 'fake-token-' + Date.now());
-        localStorage.setItem('consultant_user', JSON.stringify({ email }));
-        navigate('/consultant/dashboard');
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('consultant_user', JSON.stringify({
+          id: response.user._id,
+          email: response.user.email,
+          fullname: response.user.fullname,
+          profession: response.user.profession,
+        }));
+        localStorage.setItem('wix_c_Identity', response.user._id);
+        localStorage.setItem('wix_id', response.user.shop_id);
+
+        console.log('[CONSULTANT-LOGIN] Authentication successful, redirecting...');
+
+        // Immediately navigate - don't wait for dashboard data
+        setRedirecting(true);
+        navigate('/consultant/dashboard', { replace: true });
       } else {
-        setError('Invalid email or password');
+        setError(response.message || 'Login failed');
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      const errorMsg = err.message || 'Login failed. Please try again.';
+      console.error('[CONSULTANT-LOGIN] ERROR:', errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
+
+  if (redirecting) {
+    return (
+      <div className="consultant-login-container">
+        <div className="consultant-login-box">
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '20px' }}>🔄</div>
+            <p style={{ fontSize: '18px', color: '#333' }}>Redirecting to dashboard...</p>
+            <p style={{ fontSize: '14px', color: '#999', marginTop: '10px' }}>Just a moment...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="consultant-login-container">
@@ -52,6 +102,7 @@ function ConsultantLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
+              disabled={loading}
             />
           </div>
 
@@ -63,11 +114,12 @@ function ConsultantLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              disabled={loading}
             />
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? '🔄 Logging in...' : 'Login'}
           </button>
         </form>
 
