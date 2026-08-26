@@ -13,6 +13,7 @@
 
 import React, { Fragment, Suspense, lazy, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import GlobalMessageNotification from "./components/AlertModel/GlobalMessageNotification";
 import IncommingCallAlert from "./components/AlertModel/IncommingCallAlert";
 import LoginForm from "./components/ConsultantDashboard/LoginForm";
@@ -24,6 +25,7 @@ import ConsultlyHeader from "./components/WidgetHeader/ConsultlyHeader";
 import { wixBridge } from "./integrations/wix/wixBridge";
 import { widgetModeManager } from "./integrations/wix/wixWidgetModes";
 import wixResizer, { useWixResize } from "./integrations/wix/wixResize";
+import { checkWixInstance, setInstance } from "./components/Redux/slices/wixAuthSlice";
 
 // ── Lazy load components for smaller bundle ──
 const ConsultantListing = lazy(() => import("./components/ConsultantCards/ConsultantListing"));
@@ -46,9 +48,72 @@ const WithdrawalRequestTable = lazy(() => import("./components/ConsultantDashboa
 
 function ConsultlyWidget() {
   const location = useLocation();
+  const dispatch = useDispatch();
 
   // Don't show header on dashboard
   const showHeader = !location.pathname.startsWith("/consultant-dashboard");
+
+  // ── Initialize Wix Instance (like PublicWidget does) ──
+  useEffect(() => {
+    console.log("[CONSULTLY-WIDGET] Initializing Wix instance...");
+
+    const resolveInstance = () => {
+      // Try URL params first
+      const fromUrl = new URLSearchParams(window.location.search).get("instance");
+      if (fromUrl) {
+        console.log("[CONSULTLY-WIDGET] Found instance in URL");
+        return fromUrl;
+      }
+
+      // Try localStorage
+      const fromStorage = localStorage.getItem("wix_instance");
+      if (fromStorage) {
+        console.log("[CONSULTLY-WIDGET] Found instance in localStorage");
+        return fromStorage;
+      }
+
+      return null;
+    };
+
+    const runCheck = (instance) => {
+      if (!instance) {
+        console.warn("[CONSULTLY-WIDGET] No instance available, waiting for postMessage");
+        dispatch(checkWixInstance(null));
+        return;
+      }
+
+      console.log("[CONSULTLY-WIDGET] Instance resolved, calling checkWixInstance");
+      localStorage.setItem("wix_instance", instance);
+      dispatch(setInstance(instance));
+      dispatch(checkWixInstance(instance));
+    };
+
+    // Check for immediate instance
+    const immediate = resolveInstance();
+    if (immediate) {
+      runCheck(immediate);
+    }
+
+    // Listen for postMessage with instance (like PublicWidget does)
+    const onParentMessage = (event) => {
+      const data = event.data;
+      const inst =
+        (typeof data === "object" && data !== null
+          ? data.instance || data.payload?.instance
+          : null) || null;
+
+      if (!inst || typeof inst !== "string" || inst.length < 8) return;
+      if (localStorage.getItem("wix_instance") === inst) return;
+
+      console.log("[CONSULTLY-WIDGET] Instance received from postMessage");
+      localStorage.setItem("wix_instance", inst);
+      dispatch(setInstance(inst));
+      dispatch(checkWixInstance(inst));
+    };
+
+    window.addEventListener("message", onParentMessage);
+    return () => window.removeEventListener("message", onParentMessage);
+  }, [dispatch]);
 
   // ── Wix Integration ──
   useEffect(() => {

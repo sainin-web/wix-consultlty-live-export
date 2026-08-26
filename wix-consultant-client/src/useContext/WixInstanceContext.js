@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 
 /**
  * WixInstanceContext - Manages Wix instance/shop context
  * Provides instance token and shop_id throughout the app
  * Handles async delivery of Wix context from Wix page
+ * Also reads from Redux wixAuth state when checkWixInstance succeeds
  */
 
 const WixInstanceContext = createContext(null);
@@ -13,6 +15,29 @@ export const WixInstanceProvider = ({ children }) => {
   const [shopId, setShopId] = useState(null);
   const [isContextReady, setIsContextReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Also read from Redux wixAuth state (set by checkWixInstance thunk)
+  const wixAuthState = useSelector((state) => state.wixAuth || {});
+
+  /**
+   * Watch Redux wixAuth state
+   * When checkWixInstance succeeds, Redux setInstance action is dispatched
+   * We detect that and update our context
+   */
+  useEffect(() => {
+    const instanceFromRedux = wixAuthState?.instance;
+    const isValidFromRedux = wixAuthState?.isValid;
+
+    if (instanceFromRedux) {
+      console.log("[WIX-INSTANCE-CONTEXT] Instance from Redux:", instanceFromRedux.slice(0, 20) + "...");
+      setInstance(instanceFromRedux);
+      // Mark ready if API validation succeeded
+      if (isValidFromRedux) {
+        console.log("[WIX-INSTANCE-CONTEXT] Redux checkWixInstance succeeded - marking ready");
+        setIsContextReady(true);
+      }
+    }
+  }, [wixAuthState?.instance, wixAuthState?.isValid]);
 
   /**
    * Initialize from existing sources (URL, localStorage)
@@ -25,14 +50,14 @@ export const WixInstanceProvider = ({ children }) => {
       // Try URL params first
       const urlInstance = new URLSearchParams(window.location.search).get("instance");
       if (urlInstance) {
-        console.log("[WIX-INSTANCE-CONTEXT] Found instance in URL");
+        console.log("[WIX-INSTANCE-CONTEXT] Found instance in URL:", urlInstance.slice(0, 20) + "...");
         return urlInstance;
       }
 
       // Try localStorage (might have been set by custom element)
       const storedInstance = localStorage.getItem("wix_instance");
       if (storedInstance) {
-        console.log("[WIX-INSTANCE-CONTEXT] Found instance in localStorage");
+        console.log("[WIX-INSTANCE-CONTEXT] Found instance in localStorage:", storedInstance.slice(0, 20) + "...");
         return storedInstance;
       }
 
@@ -49,8 +74,10 @@ export const WixInstanceProvider = ({ children }) => {
 
     if (initialInstance) {
       setInstance(initialInstance);
-      console.log("[WIX-INSTANCE-CONTEXT] Initial instance:", initialInstance.slice(0, 20) + "...");
+      console.log("[WIX-INSTANCE-CONTEXT] Initial instance available:", initialInstance.slice(0, 20) + "...");
       setIsContextReady(true);
+    } else {
+      console.warn("[WIX-INSTANCE-CONTEXT] Instance not found initially - waiting for Wix to send it");
     }
 
     if (initialShopId) {

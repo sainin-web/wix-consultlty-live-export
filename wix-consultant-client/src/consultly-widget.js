@@ -59,10 +59,10 @@ class ConsultlyWidgetElement extends HTMLElement {
     // Try to get instance from attribute first (Wix provides this)
     const instanceId = this.getAttribute("instance") || localStorage.getItem("wix_instance");
     if (instanceId) {
-      console.log("[CONSULTLY] Instance available:", instanceId.slice(0, 20) + "...");
+      console.log("[CONSULTLY] Instance available from attribute/storage:", instanceId.slice(0, 20) + "...");
       localStorage.setItem("wix_instance", instanceId);
     } else {
-      console.warn("[CONSULTLY] No instance attribute from Wix - waiting for context via postMessage or URL params");
+      console.warn("[CONSULTLY] No instance attribute from Wix - will request via postMessage");
     }
 
     if (!this._reactRoot) {
@@ -74,8 +74,56 @@ class ConsultlyWidgetElement extends HTMLElement {
     // Listen for Wix postMessage with instance (in case it arrives after mount)
     this._setupWixMessageListener();
 
+    // Request instance from parent Wix page
+    this._requestInstanceFromWix();
+
     // Send height to parent Wix after mount
     this._sendHeightToWix();
+  }
+
+  /**
+   * Request Wix instance from parent page
+   * After widget is ready, ask Wix to send the instance
+   */
+  _requestInstanceFromWix() {
+    const attemptRequest = (attempt = 0) => {
+      const maxAttempts = 3;
+      const delay = 100 + (attempt * 200);
+
+      setTimeout(() => {
+        const currentInstance = localStorage.getItem("wix_instance");
+        if (currentInstance) {
+          console.log("[CONSULTLY] Instance found in localStorage on attempt " + (attempt + 1));
+          return;
+        }
+
+        if (attempt < maxAttempts) {
+          console.log("[CONSULTLY] Requesting instance from Wix parent (attempt " + (attempt + 1) + "/" + maxAttempts + ")...");
+          if (window.self !== window.top && window.parent) {
+            try {
+              window.parent.postMessage(
+                {
+                  type: "CONSULTLY_WIDGET_READY",
+                  action: "REQUEST_INSTANCE",
+                  attempt: attempt + 1
+                },
+                "*"
+              );
+            } catch (e) {
+              console.log("[CONSULTLY] Error requesting instance:", e.message);
+            }
+          }
+
+          // Try again after delay
+          attemptRequest(attempt + 1);
+        } else {
+          console.warn("[CONSULTLY] ⚠️  Could not obtain Wix instance after " + maxAttempts + " attempts");
+          console.warn("[CONSULTLY] Widget is in standalone/fallback mode");
+        }
+      }, delay);
+    };
+
+    attemptRequest();
   }
 
   /**
