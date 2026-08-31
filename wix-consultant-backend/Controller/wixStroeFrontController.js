@@ -2,6 +2,9 @@ const { shopModel } = require("../Modal/shopify");
 const { User } = require("../Modal/userSchema");
 const axios = require("axios");
 const mongoose = require("mongoose");
+const {
+  resolveWixInstanceFromAuthHeader,
+} = require("../services/wixInstanceFromToken");
 
 const getAllConsultantWixStoreFront = async (req, res) => {
   const startTime = Date.now();
@@ -10,32 +13,46 @@ const getAllConsultantWixStoreFront = async (req, res) => {
   try {
     t('start');
     const authHeader = req.headers.authorization;
-    const instance = authHeader?.split(" ")[1];
 
     console.log("[DEBUG] authHeader:", authHeader ? "present" : "missing");
-    console.log("[DEBUG] instance:", instance ? instance.substring(0, 20) + "..." : "missing");
 
-    if (!instance) {
-      console.log("[ERROR] No instance in auth header");
+    if (!authHeader) {
+      console.log("[ERROR] No authorization header");
       return res.status(401).json({
         success: false,
-        message: "No instance provided",
+        message: "No authorization header",
       });
     }
 
-    t('instance-extracted');
+    t('auth-header-check');
+
+    // Verify token and extract instanceId using official Wix mechanism
+    const resolved = await resolveWixInstanceFromAuthHeader(authHeader);
+
+    if (!resolved.success) {
+      console.log("[ERROR] Token verification failed:", resolved.error);
+      return res.status(resolved.status || 401).json({
+        success: false,
+        message: resolved.error || "Unauthorized",
+      });
+    }
+
+    const instanceId = resolved.instanceId;
+    console.log("[DEBUG] Token verified, instanceId:", instanceId);
+
+    t('token-verified');
 
     // Lookup shop by instanceId — must be indexed
-    console.log("[DEBUG] Looking up shop with instanceId:", instance.substring(0, 20) + "...");
+    console.log("[DEBUG] Looking up shop with instanceId:", instanceId);
     const findAdmin = await shopModel.findOne({
-      instanceId: instance,
+      instanceId: instanceId,
     }).lean().select("_id");
 
     t('shop-lookup');
     console.log("[DEBUG] Shop lookup result:", findAdmin ? "found" : "NOT FOUND");
 
     if (!findAdmin) {
-      console.log("[ERROR] Shop not found for instance:", instance.substring(0, 20) + "...");
+      console.log("[ERROR] Shop not found for instanceId:", instanceId);
       return res.status(401).json({
         success: false,
         message: "Unauthorized - shop not found",
@@ -53,28 +70,72 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     t('pagination-setup');
 
     // Query consultants with detailed logging
-    console.log("[DEBUG] Querying consultants with:", { shop_id: shop_id.toString(), userType: "consultant", isActive: true });
+    const query = { userType: "consultant", shop_id: shop_id.toString(), isActive: true };
+    console.log("[DEBUG] Querying consultants with:", query);
+
+    // First, check all consultants for this shop (debug)
+    const allConsultantsForShop = await User.find({ shop_id: shop_id.toString() })
+      .select("_id fullname userType isActive consultantStatus")
+      .lean()
+      .exec();
+
+    console.log("[DEBUG-DETAILED] All users for this shop:", {
+      total: allConsultantsForShop.length,
+      byType: {
+        consultant: allConsultantsForShop.filter(u => u.userType === 'consultant').length,
+        other: allConsultantsForShop.filter(u => u.userType !== 'consultant').length
+      },
+      isActiveBreakdown: {
+        active: allConsultantsForShop.filter(u => u.isActive === true).length,
+        inactive: allConsultantsForShop.filter(u => u.isActive === false).length,
+        undefined: allConsultantsForShop.filter(u => u.isActive === undefined).length
+      },
+      sample: allConsultantsForShop.slice(0, 3).map(u => ({
+        _id: u._id.toString(),
+        name: u.fullname,
+        type: u.userType,
+        isActive: u.isActive,
+        consultantStatus: u.consultantStatus
+      }))
+    });
 
     const [consultants, totalCount] = await Promise.all([
-      User.find({
-        userType: "consultant",
-        shop_id: shop_id.toString(),
-        isActive: true,
-      })
-        .select("_id fullname profession profileImage experience language chatPerMinute voicePerMinute videoPerMinute")
+      User.find(query)
+        .select("_id fullname profession profileImage experience language chatPerMinute voicePerMinute videoPerMinute shop_id")
         .lean()
         .skip(skip)
         .limit(limit)
         .exec(),
-      User.countDocuments({
-        userType: "consultant",
-        shop_id: shop_id.toString(),
-        isActive: true,
-      })
+      User.countDocuments(query)
     ]);
 
     t('consultant-query-complete');
     console.log("[DEBUG] Query results - found:", consultants.length, "total:", totalCount);
+
+    if (consultants.length > 0) {
+      console.log("[DEBUG] Sample consultant data:", consultants[0]);
+    } else {
+      console.log("[DEBUG-EMPTY] No consultants found! Checking raw data...");
+
+      // Debug: check without isActive filter
+      const allConsultants = await User.find({
+        userType: "consultant",
+        shop_id: shop_id.toString()
+      })
+        .select("_id fullname isActive consultantStatus")
+        .lean()
+        .exec();
+
+      console.log("[DEBUG-UNFILTERED] Consultants without isActive filter:", {
+        count: allConsultants.length,
+        data: allConsultants.map(c => ({
+          id: c._id.toString(),
+          name: c.fullname,
+          isActive: c.isActive,
+          consultantStatus: c.consultantStatus
+        }))
+      });
+    }
 
     // Transform to response format
     const hostBase = `${req.protocol}://${req.get("host")}`;

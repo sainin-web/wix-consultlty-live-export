@@ -6,13 +6,13 @@ import { perfMark, perfMeasure } from "../../../utils/performanceMonitor";
 
 export const fetchConsultants = createAsyncThunk(
   "consultants/fetch",
-  async ({ instance, page = 1, limit = 12 }) => {
+  async ({ accessToken, page = 1, limit = 12 }) => {
     perfMark('api:consultant-fetch-start');
 
-    const authToken = instance || localStorage.getItem("wix_instance") || "";
+    const authToken = accessToken || localStorage.getItem("wix_access_token") || "";
     const apiUrl = `${process.env.REACT_APP_BACKEND_HOST}/api/consultant/wix-store-front`;
 
-    console.log("[API-DEBUG] fetchConsultants called with:", { instance, page, limit });
+    console.log("[API-DEBUG] fetchConsultants called with:", { accessToken: accessToken ? accessToken.substring(0, 20) + "..." : "missing", page, limit });
     console.log("[API-DEBUG] Using authToken:", authToken.substring(0, 20) + "...");
     console.log("[API-DEBUG] Calling endpoint:", apiUrl);
 

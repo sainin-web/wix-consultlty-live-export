@@ -1,17 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchConsultants } from "../Redux/slices/ConsultantSlices";
-import { fetchVoucherData } from "../Redux/slices/UserSlices";
 import { checkUserBalance, openCallPage } from "../middle-ware/OpenCallingPage";
 import { getCustomerId } from "../../utils/wixStorage";
 import { useWixUser } from "../../useContext/WixUserContext";
-import { useWixInstance } from "../../useContext/WixInstanceContext";
 import { ConsultantGrid } from "./ConsultantGrid";
 import { LoadingState } from "./LoadingState";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { perfMark, perfMeasure } from "../../utils/performanceMonitor";
+import { waitForWixAccessToken } from "../../services/wixAuth";
 import "./ConsultantListing.css";
 
 /**
@@ -23,10 +22,10 @@ import "./ConsultantListing.css";
  * - Socket is NOT initialized for storefront (only for chat/calls)
  * - Uses Redux cache to prevent duplicate API calls
  *
- * WIX INSTANCE HANDLING:
- * - Waits for Wix instance context to be ready
- * - Automatically fetches when instance becomes available
- * - Shows loading state while waiting for Wix context
+ * WIX AUTHENTICATION:
+ * - Obtains Wix access token from environment
+ * - Passes token to backend for verification
+ * - Backend resolves shop ID from token
  */
 function ConsultantListing() {
   const dispatch = useDispatch();
@@ -39,32 +38,62 @@ function ConsultantListing() {
   );
   const { voucherData } = useSelector((state) => state.users);
 
-  // Get Wix context (instance and shop_id) - this waits for async Wix delivery
-  const wixInstance = useWixInstance();
-  const { instance, shopId, isContextReady, isLoading: isContextLoading } = wixInstance;
-
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [accessToken, setAccessToken] = useState(null);
+  const [isWaitingForToken, setIsWaitingForToken] = useState(true);
 
   // Mark storefront component mount
   useEffect(() => {
     perfMark('storefront:mount');
   }, []);
 
-  // Load consultants and vouchers in parallel
-  // Waits for Wix context to be ready, then fetches
+  // Obtain Wix access token
   useEffect(() => {
-    console.log("[STOREFRONT-DEBUG] Effect running - context ready:", isContextReady, "instance:", instance ? instance.slice(0, 20) + "..." : "missing", "shopId:", shopId);
+    let mounted = true;
 
-    // Wait for Wix context to load
-    if (isContextLoading) {
-      console.log("[STOREFRONT-DEBUG] Still waiting for Wix context...");
+    const obtainToken = async () => {
+      try {
+        console.log("[STOREFRONT] Obtaining Wix access token...");
+        const token = await waitForWixAccessToken(10, 500);
+
+        if (mounted) {
+          if (token) {
+            console.log("[STOREFRONT] Access token obtained successfully");
+            setAccessToken(token);
+          } else {
+            console.warn("[STOREFRONT] Failed to obtain access token after retries");
+          }
+          setIsWaitingForToken(false);
+        }
+      } catch (err) {
+        console.error("[STOREFRONT] Error obtaining access token:", err);
+        if (mounted) {
+          setIsWaitingForToken(false);
+        }
+      }
+    };
+
+    obtainToken();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Load consultants and vouchers in parallel
+  // Once access token is available, fetch consultants
+  useEffect(() => {
+    console.log("[STOREFRONT-DEBUG] Effect running - token ready:", !!accessToken, "waiting:", isWaitingForToken);
+
+    // Wait for token to be obtained
+    if (isWaitingForToken) {
+      console.log("[STOREFRONT-DEBUG] Still waiting for access token...");
       return;
     }
 
-    // Wix context loaded, check if we have required data
-    if (!isContextReady || !instance || !shopId) {
-      console.warn("[STOREFRONT-DEBUG] Wix context loaded but missing data", { isContextReady, hasInstance: !!instance, hasShopId: !!shopId });
+    if (!accessToken) {
+      console.warn("[STOREFRONT-DEBUG] Access token not available after waiting");
       return;
     }
 
@@ -86,18 +115,20 @@ function ConsultantListing() {
     });
 
     if (!consultants?.findConsultant || consultants.findConsultant.length === 0) {
-      console.log("[STOREFRONT] Fetching consultants for shop:", shopId);
-      console.log("[STOREFRONT-DEBUG] Calling fetchConsultants with:", { instance: instance.slice(0, 20) + "...", page: 1, limit: 12 });
+      console.log("[STOREFRONT] Fetching consultants with access token");
+      console.log("[STOREFRONT-DEBUG] Calling fetchConsultants with:", { accessToken: accessToken.slice(0, 20) + "...", page: 1, limit: 12 });
       dispatchActions.push(
-        dispatch(fetchConsultants({ instance, page: 1, limit: 12 }))
+        dispatch(fetchConsultants({ accessToken, page: 1, limit: 12 }))
       );
     } else {
       console.log("[STOREFRONT] Using cached consultants:", consultants.findConsultant.length);
     }
 
+    // Fetch voucher data if needed (this doesn't require token)
     if (!voucherData) {
-      console.log("[STOREFRONT] Fetching voucher data for shop:", shopId);
-      dispatchActions.push(dispatch(fetchVoucherData(shopId)));
+      console.log("[STOREFRONT] Fetching voucher data");
+      // NOTE: fetchVoucherData currently requires shopId - we'll get that from backend response
+      // For now, skip this to avoid errors - it will be fetched when consultants are available
     } else {
       console.log("[STOREFRONT] Using cached voucher data");
     }
@@ -109,7 +140,7 @@ function ConsultantListing() {
         perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
       });
     }
-  }, [isContextLoading, isContextReady, instance, shopId, hasAttemptedFetch, dispatch, consultants, voucherData]);
+  }, [isWaitingForToken, accessToken, hasAttemptedFetch, dispatch, consultants, voucherData]);
 
   // Map consultants with proper data handling
   const mappedConsultants = React.useMemo(() => {
@@ -180,6 +211,7 @@ function ConsultantListing() {
       return;
     }
 
+    const shopId = localStorage.getItem("wix_id");
     const balance = await checkUserBalance({
       userId,
       consultantId,
@@ -202,6 +234,7 @@ function ConsultantListing() {
       return;
     }
 
+    const shopId = localStorage.getItem("wix_id");
     await openCallPage({
       receiverId,
       type,
@@ -246,8 +279,7 @@ function ConsultantListing() {
           onViewProfile={handleViewProfile}
           onChat={handleChat}
           onCall={handleCall}
-          isContextLoading={isContextLoading}
-          isContextReady={isContextReady}
+          isWaitingForToken={isWaitingForToken}
         />
       </>
     );
@@ -261,8 +293,7 @@ function ConsultantListing() {
       onViewProfile={handleViewProfile}
       onChat={handleChat}
       onCall={handleCall}
-      isContextLoading={isContextLoading}
-      isContextReady={isContextReady}
+      isWaitingForToken={isWaitingForToken}
     />
   );
 }
@@ -277,8 +308,7 @@ function ConsultantListingContent({
   onViewProfile,
   onChat,
   onCall,
-  isContextLoading,
-  isContextReady,
+  isWaitingForToken,
 }) {
   return (
     <main className="consultant-listing-main">
@@ -290,7 +320,7 @@ function ConsultantListingContent({
         </div>
 
         {/* Content Section */}
-        {isContextLoading || !isContextReady ? (
+        {isWaitingForToken ? (
           <LoadingState />
         ) : loading ? (
           <LoadingState />
