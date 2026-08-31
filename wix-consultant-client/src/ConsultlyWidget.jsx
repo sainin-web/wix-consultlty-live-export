@@ -55,7 +55,7 @@ function ConsultlyWidget({ wixClient }) {
 
   // ── Initialize Wix Client ──
   useEffect(() => {
-    if (!wixClient || !wixClient.wixClient) {
+    if (!wixClient) {
       console.warn("[CONSULTLY-WIDGET] Wix Client not available");
       return;
     }
