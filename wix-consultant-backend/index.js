@@ -35,6 +35,21 @@ app.use((req, res, next) => {
   );
   next();
 });
+
+// ─── PUBLIC STATIC FILES (BEFORE JSON/FORM PARSING) ────────────────────────
+// Wix custom element script and assets must be publicly accessible
+// and must NOT require authentication
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    setHeaders: (res, filePath) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      }
+    },
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
