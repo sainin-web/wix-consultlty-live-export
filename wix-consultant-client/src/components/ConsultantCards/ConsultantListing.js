@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchConsultants } from "../Redux/slices/ConsultantSlices";
 import { checkUserBalance, openCallPage } from "../middle-ware/OpenCallingPage";
 import { getCustomerId } from "../../utils/wixStorage";
 import { useWixUser } from "../../useContext/WixUserContext";
@@ -53,15 +52,26 @@ function ConsultantListing() {
 
   // Wait for Wix Client to be ready
   useEffect(() => {
+    const { wixClient: client, isReady, error } = wixClient;
+
     console.log("[STOREFRONT] Checking Wix Client...");
 
-    if (!wixClient) {
-      console.warn("[STOREFRONT] Wix Client not available");
+    if (error) {
+      console.error("[STOREFRONT] ✗ Wix Auth error:", error);
       return;
     }
 
-    console.log("[WIX-AUTH] ✓ Client ready");
-    console.log("[STOREFRONT] Wix authentication ready");
+    if (!isReady) {
+      console.log("[STOREFRONT] Wix Client initializing...");
+      return;
+    }
+
+    if (!client) {
+      console.warn("[STOREFRONT] ✗ Wix Client not available");
+      return;
+    }
+
+    console.log("[STOREFRONT] ✓ Wix Client ready");
     setAuthReady(true);
   }, [wixClient]);
 
@@ -77,21 +87,31 @@ function ConsultantListing() {
       setHasAttemptedFetch(true);
       perfMark('storefront:fetch-start');
 
+      // Extract wixClient from context
+      const { wixClient: client } = wixClient;
+      if (!client) {
+        console.error("[STOREFRONT] ✗ wixClient not available");
+        dispatch({
+          type: "consultants/setError",
+          payload: "Wix Client not available",
+        });
+        return;
+      }
+
       // Use Wix Client's fetchWithAuth to make authenticated request
-      // wixClient.fetchWithAuth() automatically includes Wix access token
-      wixClient
-        .fetchWithAuth(`${process.env.REACT_APP_BACKEND_HOST || "http://localhost:3500"}/api/consultant/wix-store-front`, {
+      // This automatically includes Wix access token in Authorization header
+      const backendUrl = process.env.REACT_APP_BACKEND_HOST || "http://localhost:3500";
+      const url = `${backendUrl}/api/consultant/wix-store-front?page=1&limit=12`;
+
+      client
+        .fetchWithAuth(url, {
           method: "GET",
-          query: {
-            page: "1",
-            limit: "12",
-          },
         })
         .then((response) => {
           console.log("[BACKEND] Response received from /api/consultant/wix-store-front");
 
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
           return response.json();
         })
@@ -257,7 +277,7 @@ function ConsultantListing() {
           onViewProfile={handleViewProfile}
           onChat={handleChat}
           onCall={handleCall}
-          authState={authState}
+          isAuthenticated={authReady}
         />
       </>
     );
@@ -271,7 +291,7 @@ function ConsultantListing() {
       onViewProfile={handleViewProfile}
       onChat={handleChat}
       onCall={handleCall}
-      authState={authState}
+      isAuthenticated={authReady}
     />
   );
 }
@@ -286,13 +306,8 @@ function ConsultantListingContent({
   onViewProfile,
   onChat,
   onCall,
-  authState,
+  isAuthenticated,
 }) {
-  // Determine what to show
-  const isAuthenticating = authState?.status === "loading";
-  const isAuthError = authState?.status === "error";
-  const isAuthenticated = authState?.status === "authenticated";
-
   return (
     <main className="consultant-listing-main">
       <section className="consultant-listing-container">
@@ -303,14 +318,12 @@ function ConsultantListingContent({
         </div>
 
         {/* Content Section - Show appropriate state */}
-        {isAuthenticating && <LoadingState />}
-        {isAuthError && <ErrorState />}
-        {isAuthenticated && (
+        {!isAuthenticated && <LoadingState />}
+        {isAuthenticated && error && <ErrorState />}
+        {isAuthenticated && !error && (
           <>
             {loading ? (
               <LoadingState />
-            ) : error ? (
-              <ErrorState />
             ) : mappedConsultants.length === 0 ? (
               <EmptyState />
             ) : (

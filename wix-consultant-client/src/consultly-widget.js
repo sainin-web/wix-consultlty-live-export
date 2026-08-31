@@ -1,17 +1,18 @@
 /**
- * CONSULTLY WIDGET ENTRY POINT - OFFICIAL WIX CLIENT SDK
+ * CONSULTLY WIDGET ENTRY POINT - SELF-MANAGED WIX CUSTOM ELEMENT
  *
  * Registers: <consultly-widget> custom element
  * Used by: Wix Site Page "Consultly"
  *
- * AUTHENTICATION ARCHITECTURE:
+ * OFFICIAL WIX AUTHENTICATION ARCHITECTURE:
  * 1. Wix loads this custom element on the site
- * 2. createClient() initializes with Wix site context
- * 3. Wix injects current visitor/member access token into client.auth
- * 4. fetchWithAuth() includes token in all requests
- * 5. Backend receives Authorization header with Wix token
- * 6. Backend verifies token using Wix token-info API
- * 7. Backend extracts instanceId and resolves Consultly shop
+ * 2. site.auth() and site.host() provide Wix-managed authentication
+ * 3. createClient() initializes with Site host context
+ * 4. Wix injects current visitor/member access token automatically
+ * 5. fetchWithAuth() includes Wix access token in all requests
+ * 6. Backend receives Authorization header with verified Wix token
+ * 7. Backend verifies token and extracts instanceId
+ * 8. Backend resolves Consultly shop by verified instanceId
  */
 
 import "./localStoragePolyfill";
@@ -30,8 +31,12 @@ import ToastProvider from "./components/AlertModel/ToastProvider";
 import { WixUserProvider } from "./useContext/WixUserContext";
 import { WixAuthProvider } from "./useContext/WixAuthContext";
 
-// Official Wix Client SDK for self-managed custom elements
+// Official Wix Client SDK with Site host authentication
 import { createClient } from "@wix/sdk";
+import { site } from "@wix/site";
+
+// Wix app ID (from Wix Dev Center)
+const WIX_APP_ID = "e87fc4f0-d74b-463f-ad77-b813eec84846";
 
 function ConsultlyRoot({ wixClient }) {
   return (
@@ -56,8 +61,12 @@ function ConsultlyRoot({ wixClient }) {
 // ─── CONSULTLY CUSTOM ELEMENT ───────────────────────────────────────────────
 /**
  * Self-managed Wix custom element
- * Wix site context is auto-detected by createClient()
- * Wix injects access token via client.auth
+ *
+ * Official Wix pattern:
+ * - site.auth() provides Wix's token injection mechanism
+ * - site.host() configures the Wix host context with app ID
+ * - Wix automatically injects visitor/member access token
+ * - fetchWithAuth() uses the injected token for backend requests
  */
 class ConsultlyWidgetElement extends HTMLElement {
   constructor() {
@@ -81,38 +90,39 @@ class ConsultlyWidgetElement extends HTMLElement {
 
   async _initialize() {
     try {
-      // Create Wix Client
-      // For self-managed elements on a Wix site, createClient() auto-detects
-      // the site context and Wix injects the access token
-      console.log("[WIX-CLIENT] Creating Wix client...");
+      console.log("[WIX-CLIENT] Initializing Wix Client with Site host context...");
 
-      const wixClient = createClient({});
+      // Official Wix pattern for self-managed custom elements:
+      // 1. site.auth() - provides Wix's automatic token injection
+      // 2. site.host() - configures Wix host with app ID
+      const wixClient = createClient({
+        auth: site.auth(),
+        host: site.host({
+          applicationId: WIX_APP_ID,
+        }),
+      });
 
-      console.log("[WIX-AUTH] Wix Client initialized");
-      console.log("[WIX-AUTH] Client has fetchWithAuth method");
-
-      // Verify that Wix has injected auth headers
-      // This happens automatically when running on Wix
-      const authHeaders = await wixClient.auth.getAuthHeaders();
-      if (authHeaders && authHeaders.authorization) {
-        console.log("[WIX-AUTH] ✓ Wix access token injected by Wix");
-      }
+      console.log("[WIX-AUTH] Wix Client initialized with Site host authentication");
+      console.log("[WIX-AUTH] Wix will inject access token automatically");
 
       // Mount React app with the Wix Client
-      // React components can now use wixClient.fetchWithAuth()
+      // React components will use wixClient.fetchWithAuth() for authenticated requests
       this._reactRoot.render(
         <ConsultlyRoot wixClient={wixClient} />
       );
 
-      console.log("[WIX-AUTH] ✓ React app mounted - ready to serve consultants");
+      console.log("[CUSTOM-ELEMENT] ✓ React app mounted - waiting for Wix token injection");
 
     } catch (error) {
-      console.error("[CUSTOM-ELEMENT] Failed to initialize:", error.message);
+      console.error("[CUSTOM-ELEMENT] ✗ Initialization failed:", error.message);
+      console.error("[CUSTOM-ELEMENT] Details:", error);
 
       // Render error state
       this._reactRoot.render(
         <div style={{ padding: "20px", color: "red" }}>
-          Failed to initialize Consultly widget: {error.message}
+          <strong>Failed to initialize Consultly widget</strong>
+          <br />
+          {error.message}
         </div>
       );
     }
@@ -129,10 +139,10 @@ class ConsultlyWidgetElement extends HTMLElement {
 }
 
 // ─── CUSTOM ELEMENT REGISTRATION ───────────────────────────────────────────
-// Register as <consultly-widget> - do not change this tag name
+// Register as <consultly-widget> - MUST NOT change this tag name
 if (!customElements.get("consultly-widget")) {
   customElements.define("consultly-widget", ConsultlyWidgetElement);
-  console.log("[CUSTOM-ELEMENT] Registered: <consultly-widget>");
+  console.log("[CUSTOM-ELEMENT] ✓ Registered: <consultly-widget>");
 } else {
   console.log("[CUSTOM-ELEMENT] Already registered: <consultly-widget>");
 }

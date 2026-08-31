@@ -55,15 +55,12 @@ function ConsultlyWidget({ wixClient }) {
 
   // ── Initialize Wix Client ──
   useEffect(() => {
-    console.log("[CONSULTLY-WIDGET] Wix Client ready");
-
-    if (!wixClient) {
-      console.warn("[CONSULTLY-WIDGET] No Wix Client provided");
+    if (!wixClient || !wixClient.wixClient) {
+      console.warn("[CONSULTLY-WIDGET] Wix Client not available");
       return;
     }
 
-    // Wix Client is ready to make authenticated requests
-    // Consultant cards will fetch data using wixClient.fetchWithAuth()
+    console.log("[CONSULTLY-WIDGET] ✓ Wix Client initialized");
     console.log("[CONSULTLY-WIDGET] Ready to serve consultant listings");
   }, [wixClient]);
 
