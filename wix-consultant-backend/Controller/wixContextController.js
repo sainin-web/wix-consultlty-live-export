@@ -25,9 +25,7 @@ const getWixContext = async (req, res) => {
     const authHeader = req.headers.authorization;
     const instanceParam = req.query.instance || req.body.instance;
 
-    console.log("[WIX-CONTEXT] Request received");
-    console.log("[WIX-CONTEXT] authHeader:", authHeader ? "present" : "missing");
-    console.log("[WIX-CONTEXT] instanceParam:", instanceParam ? "present" : "missing");
+    console.log("[WIX-AUTH] Verifying Wix context");
 
     let resolved;
 
@@ -36,8 +34,9 @@ const getWixContext = async (req, res) => {
       resolved = await resolveWixInstanceFromAuthHeader(authHeader);
 
       if (resolved.success) {
-        console.log("[WIX-CONTEXT] Token verified via Authorization header");
+        console.log("[WIX-AUTH] ✓ Token verified");
         const instanceId = resolved.instanceId;
+        console.log("[WIX-AUTH] instanceId:", instanceId);
 
         // Look up shop
         const shop = await shopModel.findOne({ instanceId })
@@ -45,11 +44,14 @@ const getWixContext = async (req, res) => {
           .select("_id");
 
         if (!shop) {
+          console.log("[WIX-AUTH] ✗ Shop not found for instanceId:", instanceId);
           return res.status(401).json({
             success: false,
             message: "Shop not found for instance",
           });
         }
+
+        console.log("[WIX-AUTH] shopId:", shop._id.toString());
 
         return res.json({
           success: true,
@@ -60,12 +62,12 @@ const getWixContext = async (req, res) => {
       }
 
       // If header verification failed, fall through to other options
-      console.log("[WIX-CONTEXT] Authorization header verification failed");
+      console.log("[WIX-AUTH] Authorization header verification failed");
     }
 
     // Try instance parameter (install JWT format)
     if (instanceParam) {
-      console.log("[WIX-CONTEXT] Attempting to verify instance param");
+      console.log("[WIX-AUTH] Attempting to verify instance param");
 
       // Pass as bearer token for consistent verification
       const result = await resolveWixInstanceFromAuthHeader(`Bearer ${instanceParam}`);
@@ -77,11 +79,15 @@ const getWixContext = async (req, res) => {
           .select("_id");
 
         if (!shop) {
+          console.log("[WIX-AUTH] ✗ Shop not found for instanceId:", instanceId);
           return res.status(401).json({
             success: false,
             message: "Shop not found for instance",
           });
         }
+
+        console.log("[WIX-AUTH] ✓ Instance param verified");
+        console.log("[WIX-AUTH] shopId:", shop._id.toString());
 
         return res.json({
           success: true,
@@ -93,12 +99,13 @@ const getWixContext = async (req, res) => {
     }
 
     // No valid authentication
+    console.log("[WIX-AUTH] ✗ No valid Wix authentication found");
     return res.status(401).json({
       success: false,
       message: "No valid Wix authentication found",
     });
   } catch (error) {
-    console.error("[WIX-CONTEXT] Error:", error.message);
+    console.error("[WIX-AUTH] ✗ Error:", error.message);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

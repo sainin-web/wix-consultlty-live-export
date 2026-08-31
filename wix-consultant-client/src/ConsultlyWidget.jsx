@@ -46,74 +46,33 @@ const ConsultantWalletLogs = lazy(() => import("./components/ConsultantDashboard
 const WithdrawalRequestForm = lazy(() => import("./components/ConsultantDashboard/WithdrawalRequestForm"));
 const WithdrawalRequestTable = lazy(() => import("./components/ConsultantDashboard/WithdrawalRequestTable"));
 
-function ConsultlyWidget() {
+function ConsultlyWidget({ authState }) {
   const location = useLocation();
   const dispatch = useDispatch();
 
   // Don't show header on dashboard
   const showHeader = !location.pathname.startsWith("/consultant-dashboard");
 
-  // ── Initialize Wix Instance (like PublicWidget does) ──
+  // ── Initialize with authenticated Wix state ──
   useEffect(() => {
-    console.log("[CONSULTLY-WIDGET] Initializing Wix instance...");
+    console.log("[CONSULTLY-WIDGET] Initializing with auth state:", authState.status);
 
-    const resolveInstance = () => {
-      // Try URL params first
-      const fromUrl = new URLSearchParams(window.location.search).get("instance");
-      if (fromUrl) {
-        console.log("[CONSULTLY-WIDGET] Found instance in URL");
-        return fromUrl;
-      }
-
-      // Try localStorage
-      const fromStorage = localStorage.getItem("wix_instance");
-      if (fromStorage) {
-        console.log("[CONSULTLY-WIDGET] Found instance in localStorage");
-        return fromStorage;
-      }
-
-      return null;
-    };
-
-    const runCheck = (instance) => {
-      if (!instance) {
-        console.warn("[CONSULTLY-WIDGET] No instance available, waiting for postMessage");
-        dispatch(checkWixInstance(null));
-        return;
-      }
-
-      console.log("[CONSULTLY-WIDGET] Instance resolved, calling checkWixInstance");
-      localStorage.setItem("wix_instance", instance);
-      dispatch(setInstance(instance));
-      dispatch(checkWixInstance(instance));
-    };
-
-    // Check for immediate instance
-    const immediate = resolveInstance();
-    if (immediate) {
-      runCheck(immediate);
+    if (!authState) {
+      console.warn("[CONSULTLY-WIDGET] No auth state provided");
+      return;
     }
 
-    // Listen for postMessage with instance (like PublicWidget does)
-    const onParentMessage = (event) => {
-      const data = event.data;
-      const inst =
-        (typeof data === "object" && data !== null
-          ? data.instance || data.payload?.instance
-          : null) || null;
-
-      if (!inst || typeof inst !== "string" || inst.length < 8) return;
-      if (localStorage.getItem("wix_instance") === inst) return;
-
-      console.log("[CONSULTLY-WIDGET] Instance received from postMessage");
-      localStorage.setItem("wix_instance", inst);
-      dispatch(setInstance(inst));
-      dispatch(checkWixInstance(inst));
-    };
-
-    window.addEventListener("message", onParentMessage);
-    return () => window.removeEventListener("message", onParentMessage);
-  }, [dispatch]);
+    if (authState.status === "authenticated" && authState.accessToken) {
+      console.log("[CONSULTLY-WIDGET] Authenticated - ready to fetch consultants");
+      localStorage.setItem("wix_access_token", authState.accessToken);
+      localStorage.setItem("wix_id", authState.shopId);
+      dispatch(setInstance(authState.accessToken));
+    } else if (authState.status === "error") {
+      console.error("[CONSULTLY-WIDGET] Auth error:", authState.error);
+    } else if (authState.status === "loading") {
+      console.log("[CONSULTLY-WIDGET] Auth still loading...");
+    }
+  }, [authState, dispatch]);
 
   // ── Wix Integration ──
   useEffect(() => {

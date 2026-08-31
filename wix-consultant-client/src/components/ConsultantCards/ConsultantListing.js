@@ -5,33 +5,36 @@ import { fetchConsultants } from "../Redux/slices/ConsultantSlices";
 import { checkUserBalance, openCallPage } from "../middle-ware/OpenCallingPage";
 import { getCustomerId } from "../../utils/wixStorage";
 import { useWixUser } from "../../useContext/WixUserContext";
+import { useWixAuth } from "../../useContext/WixAuthContext";
 import { ConsultantGrid } from "./ConsultantGrid";
 import { LoadingState } from "./LoadingState";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { perfMark, perfMeasure } from "../../utils/performanceMonitor";
-import { waitForWixAccessToken } from "../../services/wixAuth";
 import "./ConsultantListing.css";
 
 /**
  * Professional consultant marketplace listing.
  * Handles data fetching, caching, and state management.
  *
- * PERF OPTIMIZATION:
- * - Renders skeleton immediately (does not wait for API)
- * - Socket is NOT initialized for storefront (only for chat/calls)
- * - Uses Redux cache to prevent duplicate API calls
+ * AUTHENTICATION:
+ * - Uses WixAuthContext for authenticated Wix state
+ * - Waits for status === "authenticated" before fetching
+ * - Passes access token in Authorization header
+ * - Backend verifies token and resolves shop
  *
- * WIX AUTHENTICATION:
- * - Obtains Wix access token from environment
- * - Passes token to backend for verification
- * - Backend resolves shop ID from token
+ * STATES:
+ * - Loading: Waiting for auth or fetching from API
+ * - Authenticated: Auth successful, consultants available
+ * - Error: Auth failed or API error
+ * - Empty: No consultants found
  */
 function ConsultantListing() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useWixUser();
   const userId = user?.wixDbId || getCustomerId();
+  const authState = useWixAuth();
 
   const { consultants, loading, error } = useSelector(
     (state) => state.consultants
@@ -40,107 +43,61 @@ function ConsultantListing() {
 
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
-  const [accessToken, setAccessToken] = useState(null);
-  const [isWaitingForToken, setIsWaitingForToken] = useState(true);
 
   // Mark storefront component mount
   useEffect(() => {
     perfMark('storefront:mount');
   }, []);
 
-  // Obtain Wix access token
+  // Load consultants once authenticated
   useEffect(() => {
-    let mounted = true;
+    console.log("[STOREFRONT] Auth status:", authState?.status);
 
-    const obtainToken = async () => {
-      try {
-        console.log("[STOREFRONT] Obtaining Wix access token...");
-        const token = await waitForWixAccessToken(10, 500);
-
-        if (mounted) {
-          if (token) {
-            console.log("[STOREFRONT] Access token obtained successfully");
-            setAccessToken(token);
-          } else {
-            console.warn("[STOREFRONT] Failed to obtain access token after retries");
-          }
-          setIsWaitingForToken(false);
-        }
-      } catch (err) {
-        console.error("[STOREFRONT] Error obtaining access token:", err);
-        if (mounted) {
-          setIsWaitingForToken(false);
-        }
-      }
-    };
-
-    obtainToken();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Load consultants and vouchers in parallel
-  // Once access token is available, fetch consultants
-  useEffect(() => {
-    console.log("[STOREFRONT-DEBUG] Effect running - token ready:", !!accessToken, "waiting:", isWaitingForToken);
-
-    // Wait for token to be obtained
-    if (isWaitingForToken) {
-      console.log("[STOREFRONT-DEBUG] Still waiting for access token...");
+    // Wait for auth to complete
+    if (authState?.status === "loading") {
+      console.log("[STOREFRONT] Waiting for Wix authentication...");
       return;
     }
 
-    if (!accessToken) {
-      console.warn("[STOREFRONT-DEBUG] Access token not available after waiting");
+    // Auth failed
+    if (authState?.status === "error") {
+      console.error("[STOREFRONT] Auth error:", authState.error);
+      return;
+    }
+
+    // Auth successful but no token
+    if (authState?.status !== "authenticated" || !authState?.accessToken) {
+      console.warn("[STOREFRONT] Not authenticated");
       return;
     }
 
     // Only fetch once
     if (hasAttemptedFetch) {
-      console.log("[STOREFRONT-DEBUG] Already attempted fetch, skipping");
+      console.log("[STOREFRONT] Already attempted fetch, skipping");
       return;
     }
+
+    console.log("[STOREFRONT] Authenticated - fetching consultants");
+    console.log("[STOREFRONT] shopId:", authState.shopId);
 
     setHasAttemptedFetch(true);
     perfMark('storefront:fetch-start');
 
     // Only fetch if data is not already in Redux
-    const dispatchActions = [];
-
-    console.log("[STOREFRONT-DEBUG] Current Redux consultants state:", {
-      hasData: !!consultants?.findConsultant,
-      count: consultants?.findConsultant?.length || 0,
-    });
-
     if (!consultants?.findConsultant || consultants.findConsultant.length === 0) {
-      console.log("[STOREFRONT] Fetching consultants with access token");
-      console.log("[STOREFRONT-DEBUG] Calling fetchConsultants with:", { accessToken: accessToken.slice(0, 20) + "...", page: 1, limit: 12 });
-      dispatchActions.push(
-        dispatch(fetchConsultants({ accessToken, page: 1, limit: 12 }))
-      );
-    } else {
-      console.log("[STOREFRONT] Using cached consultants:", consultants.findConsultant.length);
-    }
-
-    // Fetch voucher data if needed (this doesn't require token)
-    if (!voucherData) {
-      console.log("[STOREFRONT] Fetching voucher data");
-      // NOTE: fetchVoucherData currently requires shopId - we'll get that from backend response
-      // For now, skip this to avoid errors - it will be fetched when consultants are available
-    } else {
-      console.log("[STOREFRONT] Using cached voucher data");
-    }
-
-    // Only use Promise.all if we have actions to dispatch
-    if (dispatchActions.length > 0) {
-      Promise.all(dispatchActions).then(() => {
+      console.log("[STOREFRONT] Fetching consultants");
+      dispatch(fetchConsultants({
+        accessToken: authState.accessToken,
+        page: 1,
+        limit: 12,
+      })).then(() => {
         perfMark('storefront:fetch-end');
         perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
       });
+    } else {
+      console.log("[STOREFRONT] Using cached consultants:", consultants.findConsultant.length);
     }
-  }, [isWaitingForToken, accessToken, hasAttemptedFetch, dispatch, consultants, voucherData]);
+  }, [authState?.status, authState?.accessToken, hasAttemptedFetch, dispatch, consultants]);
 
   // Map consultants with proper data handling
   const mappedConsultants = React.useMemo(() => {
@@ -279,7 +236,7 @@ function ConsultantListing() {
           onViewProfile={handleViewProfile}
           onChat={handleChat}
           onCall={handleCall}
-          isWaitingForToken={isWaitingForToken}
+          authState={authState}
         />
       </>
     );
@@ -293,7 +250,7 @@ function ConsultantListing() {
       onViewProfile={handleViewProfile}
       onChat={handleChat}
       onCall={handleCall}
-      isWaitingForToken={isWaitingForToken}
+      authState={authState}
     />
   );
 }
@@ -308,8 +265,13 @@ function ConsultantListingContent({
   onViewProfile,
   onChat,
   onCall,
-  isWaitingForToken,
+  authState,
 }) {
+  // Determine what to show
+  const isAuthenticating = authState?.status === "loading";
+  const isAuthError = authState?.status === "error";
+  const isAuthenticated = authState?.status === "authenticated";
+
   return (
     <main className="consultant-listing-main">
       <section className="consultant-listing-container">
@@ -319,31 +281,35 @@ function ConsultantListingContent({
           <p>Connect with experienced professionals ready to help</p>
         </div>
 
-        {/* Content Section */}
-        {isWaitingForToken ? (
-          <LoadingState />
-        ) : loading ? (
-          <LoadingState />
-        ) : error ? (
-          <ErrorState />
-        ) : mappedConsultants.length === 0 ? (
-          <EmptyState />
-        ) : (
+        {/* Content Section - Show appropriate state */}
+        {isAuthenticating && <LoadingState />}
+        {isAuthError && <ErrorState />}
+        {isAuthenticated && (
           <>
-            <div className="consultant-listing-section-header">
-              <h2>Available Consultants</h2>
-              <p className="consultant-listing-count">
-                {mappedConsultants.length}{" "}
-                {mappedConsultants.length === 1 ? "consultant" : "consultants"}
-              </p>
-            </div>
-            <ConsultantGrid
-              consultants={mappedConsultants}
-              onViewProfile={onViewProfile}
-              onChat={onChat}
-              onCall={onCall}
-              loading={loading}
-            />
+            {loading ? (
+              <LoadingState />
+            ) : error ? (
+              <ErrorState />
+            ) : mappedConsultants.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <>
+                <div className="consultant-listing-section-header">
+                  <h2>Available Consultants</h2>
+                  <p className="consultant-listing-count">
+                    {mappedConsultants.length}{" "}
+                    {mappedConsultants.length === 1 ? "consultant" : "consultants"}
+                  </p>
+                </div>
+                <ConsultantGrid
+                  consultants={mappedConsultants}
+                  onViewProfile={onViewProfile}
+                  onChat={onChat}
+                  onCall={onCall}
+                  loading={loading}
+                />
+              </>
+            )}
           </>
         )}
       </section>

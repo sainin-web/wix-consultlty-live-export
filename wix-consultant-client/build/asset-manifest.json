@@ -1,9 +1,9 @@
 {
   "files": {
     "main.css": "/static/css/main.a3b5a492.css",
-    "main.js": "/static/js/consultly-main.7e62aef7.js",
-    "static/css/532.efa58b22.chunk.css": "/static/css/532.efa58b22.chunk.css",
-    "static/js/consultly-532.b73b8a68.chunk.js": "/static/js/consultly-532.b73b8a68.chunk.js",
+    "main.js": "/static/js/consultly-main.de7f5065.js",
+    "static/css/948.3f52a0a0.chunk.css": "/static/css/948.3f52a0a0.chunk.css",
+    "static/js/consultly-948.f2240092.chunk.js": "/static/js/consultly-948.f2240092.chunk.js",
     "static/js/consultly-564.bc0a45ee.chunk.js": "/static/js/consultly-564.bc0a45ee.chunk.js",
     "static/css/455.a83d710b.chunk.css": "/static/css/455.a83d710b.chunk.css",
     "static/js/consultly-455.df3705a0.chunk.js": "/static/js/consultly-455.df3705a0.chunk.js",
@@ -27,9 +27,9 @@
     "static/js/consultly-647.d17ff69d.chunk.js": "/static/js/consultly-647.d17ff69d.chunk.js",
     "index.html": "/index.html",
     "main.a3b5a492.css.map": "/static/css/main.a3b5a492.css.map",
-    "consultly-main.7e62aef7.js.map": "/static/js/consultly-main.7e62aef7.js.map",
-    "532.efa58b22.chunk.css.map": "/static/css/532.efa58b22.chunk.css.map",
-    "consultly-532.b73b8a68.chunk.js.map": "/static/js/consultly-532.b73b8a68.chunk.js.map",
+    "consultly-main.de7f5065.js.map": "/static/js/consultly-main.de7f5065.js.map",
+    "948.3f52a0a0.chunk.css.map": "/static/css/948.3f52a0a0.chunk.css.map",
+    "consultly-948.f2240092.chunk.js.map": "/static/js/consultly-948.f2240092.chunk.js.map",
     "consultly-564.bc0a45ee.chunk.js.map": "/static/js/consultly-564.bc0a45ee.chunk.js.map",
     "455.a83d710b.chunk.css.map": "/static/css/455.a83d710b.chunk.css.map",
     "consultly-455.df3705a0.chunk.js.map": "/static/js/consultly-455.df3705a0.chunk.js.map",
@@ -54,6 +54,6 @@
   },
   "entrypoints": [
     "static/css/main.a3b5a492.css",
-    "static/js/consultly-main.7e62aef7.js"
+    "static/js/consultly-main.de7f5065.js"
   ]
 }

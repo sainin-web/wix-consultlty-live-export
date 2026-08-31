@@ -8,16 +8,16 @@ const {
 
 const getAllConsultantWixStoreFront = async (req, res) => {
   const startTime = Date.now();
-  const t = (label) => console.log(`[PERF][BACKEND] ${label}: ${Date.now() - startTime}ms`);
+  const t = (label) => console.log(`[PERF] ${label}: ${Date.now() - startTime}ms`);
 
   try {
     t('start');
     const authHeader = req.headers.authorization;
 
-    console.log("[DEBUG] authHeader:", authHeader ? "present" : "missing");
+    console.log("[WIX-AUTH] Authorization header:", authHeader ? "present" : "missing");
 
     if (!authHeader) {
-      console.log("[ERROR] No authorization header");
+      console.log("[WIX-AUTH] ✗ No authorization header");
       return res.status(401).json({
         success: false,
         message: "No authorization header",
@@ -30,7 +30,7 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     const resolved = await resolveWixInstanceFromAuthHeader(authHeader);
 
     if (!resolved.success) {
-      console.log("[ERROR] Token verification failed:", resolved.error);
+      console.log("[WIX-AUTH] ✗ Token verification failed:", resolved.error);
       return res.status(resolved.status || 401).json({
         success: false,
         message: resolved.error || "Unauthorized",
@@ -38,21 +38,20 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     }
 
     const instanceId = resolved.instanceId;
-    console.log("[DEBUG] Token verified, instanceId:", instanceId);
+    console.log("[WIX-AUTH] ✓ Token verified");
+    console.log("[WIX-AUTH] instanceId:", instanceId);
 
     t('token-verified');
 
     // Lookup shop by instanceId — must be indexed
-    console.log("[DEBUG] Looking up shop with instanceId:", instanceId);
     const findAdmin = await shopModel.findOne({
       instanceId: instanceId,
     }).lean().select("_id");
 
     t('shop-lookup');
-    console.log("[DEBUG] Shop lookup result:", findAdmin ? "found" : "NOT FOUND");
 
     if (!findAdmin) {
-      console.log("[ERROR] Shop not found for instanceId:", instanceId);
+      console.log("[WIX-AUTH] ✗ Shop not found for instanceId:", instanceId);
       return res.status(401).json({
         success: false,
         message: "Unauthorized - shop not found",
@@ -60,7 +59,7 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     }
 
     const shop_id = findAdmin._id;
-    console.log("[DEBUG] shop_id:", shop_id);
+    console.log("[WIX-AUTH] shopId:", shop_id);
 
     // Pagination parameters
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -69,35 +68,9 @@ const getAllConsultantWixStoreFront = async (req, res) => {
 
     t('pagination-setup');
 
-    // Query consultants with detailed logging
+    // Query consultants
     const query = { userType: "consultant", shop_id: shop_id.toString(), isActive: true };
-    console.log("[DEBUG] Querying consultants with:", query);
-
-    // First, check all consultants for this shop (debug)
-    const allConsultantsForShop = await User.find({ shop_id: shop_id.toString() })
-      .select("_id fullname userType isActive consultantStatus")
-      .lean()
-      .exec();
-
-    console.log("[DEBUG-DETAILED] All users for this shop:", {
-      total: allConsultantsForShop.length,
-      byType: {
-        consultant: allConsultantsForShop.filter(u => u.userType === 'consultant').length,
-        other: allConsultantsForShop.filter(u => u.userType !== 'consultant').length
-      },
-      isActiveBreakdown: {
-        active: allConsultantsForShop.filter(u => u.isActive === true).length,
-        inactive: allConsultantsForShop.filter(u => u.isActive === false).length,
-        undefined: allConsultantsForShop.filter(u => u.isActive === undefined).length
-      },
-      sample: allConsultantsForShop.slice(0, 3).map(u => ({
-        _id: u._id.toString(),
-        name: u.fullname,
-        type: u.userType,
-        isActive: u.isActive,
-        consultantStatus: u.consultantStatus
-      }))
-    });
+    console.log("[STOREFRONT] Fetching consultants");
 
     const [consultants, totalCount] = await Promise.all([
       User.find(query)
@@ -110,32 +83,6 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     ]);
 
     t('consultant-query-complete');
-    console.log("[DEBUG] Query results - found:", consultants.length, "total:", totalCount);
-
-    if (consultants.length > 0) {
-      console.log("[DEBUG] Sample consultant data:", consultants[0]);
-    } else {
-      console.log("[DEBUG-EMPTY] No consultants found! Checking raw data...");
-
-      // Debug: check without isActive filter
-      const allConsultants = await User.find({
-        userType: "consultant",
-        shop_id: shop_id.toString()
-      })
-        .select("_id fullname isActive consultantStatus")
-        .lean()
-        .exec();
-
-      console.log("[DEBUG-UNFILTERED] Consultants without isActive filter:", {
-        count: allConsultants.length,
-        data: allConsultants.map(c => ({
-          id: c._id.toString(),
-          name: c.fullname,
-          isActive: c.isActive,
-          consultantStatus: c.consultantStatus
-        }))
-      });
-    }
 
     // Transform to response format
     const hostBase = `${req.protocol}://${req.get("host")}`;
@@ -158,7 +105,7 @@ const getAllConsultantWixStoreFront = async (req, res) => {
     const hasNextPage = skip + limit < totalCount;
     const totalPages = Math.ceil(totalCount / limit);
 
-    console.log("[SUCCESS] Returning", formattedConsultants.length, "consultants for shop:", shop_id);
+    console.log("[STOREFRONT] ✓ Consultants returned:", formattedConsultants.length);
 
     return res.status(200).json({
       success: true,
@@ -172,8 +119,7 @@ const getAllConsultantWixStoreFront = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("[ERROR] getAllConsultantWixStoreFront:", error.message);
-    console.error("[ERROR] Stack:", error.stack);
+    console.error("[STOREFRONT] ✗ Error:", error.message);
 
     res.status(500).json({
       success: false,

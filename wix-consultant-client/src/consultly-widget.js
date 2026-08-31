@@ -1,15 +1,19 @@
 /**
- * CONSULTLY WIDGET ENTRY POINT - LIGHTWEIGHT & FAST
- *
- * This is a FAST alternative to the "our-consultant" menu.
- * No heavy instance resolution = instant mounting.
+ * CONSULTLY WIDGET ENTRY POINT
  *
  * Registers: <consultly-widget> custom element
- * Used by: New "consultly" menu in Wix
+ * Used by: Wix App Page "Consultly" in Wix storefront
+ *
+ * ARCHITECTURE:
+ * 1. Custom element mounts
+ * 2. Initialize Wix Client for authentication
+ * 3. Get Wix access token
+ * 4. Mount React app with authenticated context
+ * 5. React fetches consultants with verified auth
  */
 
 import "./localStoragePolyfill";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import ConsultlyWidget from "./ConsultlyWidget";
 import "./index.css";
@@ -22,20 +26,121 @@ import { BrowserRouter } from "react-router-dom";
 import { store } from "./components/Redux/store/store";
 import ToastProvider from "./components/AlertModel/ToastProvider";
 import { WixUserProvider } from "./useContext/WixUserContext";
-import { WixInstanceProvider } from "./useContext/WixInstanceContext";
+import { WixAuthProvider } from "./useContext/WixAuthContext";
 
-function ConsultlyRoot() {
+/**
+ * Wix Client Auth Context
+ * Manages Wix authentication state for the entire widget
+ */
+function WixAuthProvider({ children }) {
+  const [authState, setAuthState] = useState({
+    status: "loading", // loading | authenticated | error
+    accessToken: null,
+    instanceId: null,
+    shopId: null,
+    error: null,
+  });
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        console.log("[WIX-AUTH] Initializing Wix authentication...");
+
+        // In a Wix App Page context, Wix handles authentication.
+        // We need to get the access token from Wix and verify it with our backend.
+        const backendHost = process.env.REACT_APP_BACKEND_HOST || 'http://localhost:3500';
+
+        // Method 1: Try to get verified context from backend
+        // When running in Wix, requests to our backend include auth headers automatically
+        try {
+          console.log("[WIX-AUTH] Calling /api/wix-context for authenticated context...");
+          const response = await fetch(`${backendHost}/api/wix-context`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.accessToken && data.shopId) {
+              console.log("[WIX-AUTH] ✓ Authenticated via backend");
+              console.log("[WIX-AUTH] instanceId:", data.instanceId);
+              console.log("[WIX-AUTH] shopId:", data.shopId);
+
+              localStorage.setItem('wix_access_token', data.accessToken);
+              localStorage.setItem('wix_id', data.shopId);
+
+              setAuthState({
+                status: "authenticated",
+                accessToken: data.accessToken,
+                instanceId: data.instanceId,
+                shopId: data.shopId,
+                error: null,
+              });
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn("[WIX-AUTH] Backend /api/wix-context call failed:", err.message);
+        }
+
+        // Method 2: Check localStorage (from previous session)
+        const cachedToken = localStorage.getItem('wix_access_token');
+        const cachedShopId = localStorage.getItem('wix_id');
+        if (cachedToken && cachedShopId) {
+          console.log("[WIX-AUTH] ✓ Using cached token from localStorage");
+          setAuthState({
+            status: "authenticated",
+            accessToken: cachedToken,
+            instanceId: cachedShopId,
+            shopId: cachedShopId,
+            error: null,
+          });
+          return;
+        }
+
+        // If we get here, auth failed
+        console.error("[WIX-AUTH] ✗ Failed to obtain Wix authentication");
+        setAuthState(prev => ({
+          ...prev,
+          status: "error",
+          error: "Failed to obtain Wix authentication",
+        }));
+
+      } catch (error) {
+        console.error("[WIX-AUTH] Authentication error:", error);
+        setAuthState(prev => ({
+          ...prev,
+          status: "error",
+          error: error.message,
+        }));
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  // Provide auth state through context or props
+  const contextValue = React.createContext(authState);
+  return (
+    <contextValue.Provider value={authState}>
+      {children}
+    </contextValue.Provider>
+  );
+}
+
+function ConsultlyRoot({ authState }) {
   return (
     <React.StrictMode>
       <PolarisAppProvider i18n={en}>
         <ToastProvider>
           <Provider store={store}>
             <BrowserRouter>
-              <WixInstanceProvider>
+              <WixAuthProvider authState={authState}>
                 <WixUserProvider>
-                  <ConsultlyWidget />
+                  <ConsultlyWidget authState={authState} />
                 </WixUserProvider>
-              </WixInstanceProvider>
+              </WixAuthProvider>
             </BrowserRouter>
           </Provider>
         </ToastProvider>
@@ -44,157 +149,104 @@ function ConsultlyRoot() {
   );
 }
 
-// ─── CONSULTLY CUSTOM ELEMENT (LIGHTWEIGHT) ────────────────────────────────
+// ─── CONSULTLY CUSTOM ELEMENT ───────────────────────────────────────────────
 class ConsultlyWidgetElement extends HTMLElement {
-  static get observedAttributes() {
-    return ["instance"];
-  }
-
   connectedCallback() {
     if (this._mounted) return;
     this._mounted = true;
 
-    console.log("✅ [CONSULTLY] Custom element mounted");
-
-    // Try to get instance from attribute first (Wix provides this)
-    const instanceId = this.getAttribute("instance") || localStorage.getItem("wix_instance");
-    if (instanceId) {
-      console.log("[CONSULTLY] Instance available from attribute/storage:", instanceId.slice(0, 20) + "...");
-      localStorage.setItem("wix_instance", instanceId);
-    } else {
-      console.warn("[CONSULTLY] No instance attribute from Wix - will request via postMessage");
-    }
+    console.log("[CONSULTLY] Custom element mounted");
 
     if (!this._reactRoot) {
       this._reactRoot = ReactDOM.createRoot(this);
     }
 
-    this._reactRoot.render(<ConsultlyRoot />);
-
-    // Listen for Wix postMessage with instance (in case it arrives after mount)
-    this._setupWixMessageListener();
-
-    // Request instance from parent Wix page
-    this._requestInstanceFromWix();
-
-    // Send height to parent Wix after mount
-    this._sendHeightToWix();
+    // Mount app with Wix authentication
+    this._renderApp();
   }
 
-  /**
-   * Request Wix instance from parent page
-   * After widget is ready, ask Wix to send the instance
-   */
-  _requestInstanceFromWix() {
-    const attemptRequest = (attempt = 0) => {
-      const maxAttempts = 3;
-      const delay = 100 + (attempt * 200);
+  async _renderApp() {
+    try {
+      // Initialize Wix authentication
+      const backendHost = process.env.REACT_APP_BACKEND_HOST || 'http://localhost:3500';
 
-      setTimeout(() => {
-        const currentInstance = localStorage.getItem("wix_instance");
-        if (currentInstance) {
-          console.log("[CONSULTLY] Instance found in localStorage on attempt " + (attempt + 1));
-          return;
-        }
+      console.log("[WIX-AUTH] Obtaining Wix authenticated context...");
 
-        if (attempt < maxAttempts) {
-          console.log("[CONSULTLY] Requesting instance from Wix parent (attempt " + (attempt + 1) + "/" + maxAttempts + ")...");
-          if (window.self !== window.top && window.parent) {
-            try {
-              window.parent.postMessage(
-                {
-                  type: "CONSULTLY_WIDGET_READY",
-                  action: "REQUEST_INSTANCE",
-                  attempt: attempt + 1
-                },
-                "*"
-              );
-            } catch (e) {
-              console.log("[CONSULTLY] Error requesting instance:", e.message);
-            }
-          }
+      // Call backend to get verified context
+      const response = await fetch(`${backendHost}/api/wix-context`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-          // Try again after delay
-          attemptRequest(attempt + 1);
+      let authState = {
+        status: "error",
+        accessToken: null,
+        instanceId: null,
+        shopId: null,
+        error: "Authentication failed",
+      };
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.accessToken) {
+          console.log("[WIX-AUTH] ✓ Authenticated successfully");
+          console.log("[WIX-AUTH] instanceId:", data.instanceId);
+          console.log("[WIX-AUTH] shopId:", data.shopId);
+
+          localStorage.setItem('wix_access_token', data.accessToken);
+          localStorage.setItem('wix_id', data.shopId);
+
+          authState = {
+            status: "authenticated",
+            accessToken: data.accessToken,
+            instanceId: data.instanceId,
+            shopId: data.shopId,
+            error: null,
+          };
         } else {
-          console.warn("[CONSULTLY] ⚠️  Could not obtain Wix instance after " + maxAttempts + " attempts");
-          console.warn("[CONSULTLY] Widget is in standalone/fallback mode");
+          console.log("[WIX-AUTH] Backend returned: ", data.message || "unknown error");
+          authState.error = data.message || "Authentication failed";
         }
-      }, delay);
-    };
-
-    attemptRequest();
-  }
-
-  /**
-   * Handle Wix context delivered via postMessage
-   */
-  _setupWixMessageListener() {
-    const handleMessage = (event) => {
-      const data = event.data;
-
-      if (!data || typeof data !== "object") return;
-
-      // Check for instance in various postMessage formats
-      const instance = data.instance || data.wixInstance || data.payload?.instance;
-
-      if (instance && typeof instance === "string") {
-        console.log("[CONSULTLY-ELEMENT] Instance received from Wix postMessage:", instance.slice(0, 20) + "...");
-        localStorage.setItem("wix_instance", instance);
-        // Trigger storage event so React context picks up the change
-        window.dispatchEvent(new StorageEvent("storage", {
-          key: "wix_instance",
-          newValue: instance,
-          url: window.location.href
-        }));
+      } else {
+        console.log("[WIX-AUTH] Backend request failed with status:", response.status);
+        authState.error = `HTTP ${response.status}`;
       }
 
-      // Also handle shop_id if provided
-      const shopId = data.shopId || data.shop_id || data.wix_id;
-      if (shopId && typeof shopId === "string") {
-        console.log("[CONSULTLY-ELEMENT] Shop ID received from postMessage:", shopId);
-        localStorage.setItem("wix_id", shopId);
-        window.dispatchEvent(new StorageEvent("storage", {
-          key: "wix_id",
-          newValue: shopId,
-          url: window.location.href
-        }));
+      // Check localStorage as fallback
+      if (authState.status !== "authenticated") {
+        const cachedToken = localStorage.getItem('wix_access_token');
+        const cachedShopId = localStorage.getItem('wix_id');
+        if (cachedToken && cachedShopId) {
+          console.log("[WIX-AUTH] Using cached token from localStorage");
+          authState = {
+            status: "authenticated",
+            accessToken: cachedToken,
+            instanceId: cachedShopId,
+            shopId: cachedShopId,
+            error: null,
+          };
+        }
       }
-    };
 
-    window.addEventListener("message", handleMessage);
-  }
+      // Render app with auth state
+      this._reactRoot.render(
+        <ConsultlyRoot authState={authState} />
+      );
 
-  attributeChangedCallback(name, oldVal, newVal) {
-    if (name === "instance" && newVal && newVal !== oldVal) {
-      console.log("[CONSULTLY-ELEMENT] Instance attribute changed:", newVal.slice(0, 20) + "...");
-      localStorage.setItem("wix_instance", newVal);
-      // Trigger storage event so React context picks up the change
-      window.dispatchEvent(new StorageEvent("storage", {
-        key: "wix_instance",
-        newValue: newVal,
-        url: window.location.href
-      }));
+    } catch (error) {
+      console.error("[WIX-AUTH] Error during authentication:", error);
+
+      this._reactRoot.render(
+        <ConsultlyRoot authState={{
+          status: "error",
+          accessToken: null,
+          instanceId: null,
+          shopId: null,
+          error: error.message,
+        }} />
+      );
     }
-  }
-
-  _sendHeightToWix() {
-    setTimeout(() => {
-      const height = this.scrollHeight || 800;
-      if (window.self !== window.top && window.parent) {
-        try {
-          window.parent.postMessage(
-            {
-              type: "widget-height-update",
-              height: height,
-            },
-            "*"
-          );
-        } catch (e) {
-          console.log("Height update: not in Wix iframe");
-        }
-      }
-    }, 100);
   }
 
   disconnectedCallback() {
@@ -203,8 +255,14 @@ class ConsultlyWidgetElement extends HTMLElement {
       this._reactRoot = null;
     }
     this._mounted = false;
+    console.log("[CONSULTLY] Custom element disconnected");
   }
 }
 
-customElements.define("consultly-widget", ConsultlyWidgetElement);
-console.log("✅ <consultly-widget> registered");
+// Register custom element - prevent duplicate registration
+if (!customElements.get("consultly-widget")) {
+  customElements.define("consultly-widget", ConsultlyWidgetElement);
+  console.log("[CONSULTLY] Custom element registered: <consultly-widget>");
+} else {
+  console.log("[CONSULTLY] Custom element already registered");
+}
