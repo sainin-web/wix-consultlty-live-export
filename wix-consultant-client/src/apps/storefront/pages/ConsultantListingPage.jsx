@@ -51,6 +51,7 @@ function ConsultantListingPage() {
     console.log('🔍 [STOREFRONT-LISTING] instance:', instance ? instance.slice(0, 30) + '...' : 'undefined');
     console.log('🔍 [STOREFRONT-LISTING] cached consultants:', consultants.length);
     console.log('🔍 [STOREFRONT-LISTING] ===========================================');
+    console.log("dfnsbfreshgij")
 
     if (!shop_id) {
       console.error('🔴 [STOREFRONT-LISTING] CRITICAL: No shop_id available - cannot fetch consultants');
