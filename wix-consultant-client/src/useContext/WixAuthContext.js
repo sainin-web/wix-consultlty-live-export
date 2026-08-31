@@ -1,40 +1,40 @@
 import React, { createContext, useContext } from "react";
 
 /**
- * WixAuthContext - Manages authenticated Wix state
- * Provides: accessToken, instanceId, shopId, auth status
+ * WixAuthContext - Provides Wix Client for authenticated requests
+ *
+ * The Wix Client handles authentication automatically:
+ * - client.fetchWithAuth() includes Wix access token in requests
+ * - Wix injects the current visitor/member token
+ * - Backend receives Authorization header with token
+ * - Backend verifies token using Wix APIs
  */
 const WixAuthContext = createContext(null);
 
-export const WixAuthProvider = ({ children, authState }) => {
+export const WixAuthProvider = ({ children, wixClient }) => {
+  if (!wixClient) {
+    console.warn("[WIX-AUTH] WixAuthProvider: wixClient is null");
+  }
+
   return (
-    <WixAuthContext.Provider value={authState}>
+    <WixAuthContext.Provider value={wixClient}>
       {children}
     </WixAuthContext.Provider>
   );
 };
 
 /**
- * Hook to use Wix authentication state
- * Returns: { status, accessToken, instanceId, shopId, error }
+ * Hook to use Wix Client for authenticated requests
+ * Returns: wixClient with fetchWithAuth() method
  *
- * Status values:
- * - "loading": Auth check in progress
- * - "authenticated": Successfully authenticated with Wix
- * - "error": Authentication failed
+ * Usage in components:
+ * const wixClient = useWixAuth();
+ * const response = await wixClient.fetchWithAuth('/api/consultant/wix-store-front');
  */
 export const useWixAuth = () => {
-  const context = useContext(WixAuthContext);
-  if (!context) {
+  const wixClient = useContext(WixAuthContext);
+  if (!wixClient) {
     throw new Error("useWixAuth must be used within WixAuthProvider");
   }
-  return context;
-};
-
-/**
- * Get authorization header for API requests
- */
-export const getWixAuthorizationHeader = (authState) => {
-  if (!authState?.accessToken) return null;
-  return `Bearer ${authState.accessToken}`;
+  return wixClient;
 };

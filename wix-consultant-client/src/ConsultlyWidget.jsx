@@ -46,33 +46,26 @@ const ConsultantWalletLogs = lazy(() => import("./components/ConsultantDashboard
 const WithdrawalRequestForm = lazy(() => import("./components/ConsultantDashboard/WithdrawalRequestForm"));
 const WithdrawalRequestTable = lazy(() => import("./components/ConsultantDashboard/WithdrawalRequestTable"));
 
-function ConsultlyWidget({ authState }) {
+function ConsultlyWidget({ wixClient }) {
   const location = useLocation();
   const dispatch = useDispatch();
 
   // Don't show header on dashboard
   const showHeader = !location.pathname.startsWith("/consultant-dashboard");
 
-  // ── Initialize with authenticated Wix state ──
+  // ── Initialize Wix Client ──
   useEffect(() => {
-    console.log("[CONSULTLY-WIDGET] Initializing with auth state:", authState.status);
+    console.log("[CONSULTLY-WIDGET] Wix Client ready");
 
-    if (!authState) {
-      console.warn("[CONSULTLY-WIDGET] No auth state provided");
+    if (!wixClient) {
+      console.warn("[CONSULTLY-WIDGET] No Wix Client provided");
       return;
     }
 
-    if (authState.status === "authenticated" && authState.accessToken) {
-      console.log("[CONSULTLY-WIDGET] Authenticated - ready to fetch consultants");
-      localStorage.setItem("wix_access_token", authState.accessToken);
-      localStorage.setItem("wix_id", authState.shopId);
-      dispatch(setInstance(authState.accessToken));
-    } else if (authState.status === "error") {
-      console.error("[CONSULTLY-WIDGET] Auth error:", authState.error);
-    } else if (authState.status === "loading") {
-      console.log("[CONSULTLY-WIDGET] Auth still loading...");
-    }
-  }, [authState, dispatch]);
+    // Wix Client is ready to make authenticated requests
+    // Consultant cards will fetch data using wixClient.fetchWithAuth()
+    console.log("[CONSULTLY-WIDGET] Ready to serve consultant listings");
+  }, [wixClient]);
 
   // ── Wix Integration ──
   useEffect(() => {

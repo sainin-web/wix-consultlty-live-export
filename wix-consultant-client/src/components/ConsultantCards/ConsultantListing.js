@@ -18,15 +18,16 @@ import "./ConsultantListing.css";
  * Handles data fetching, caching, and state management.
  *
  * AUTHENTICATION:
- * - Uses WixAuthContext for authenticated Wix state
- * - Waits for status === "authenticated" before fetching
- * - Passes access token in Authorization header
- * - Backend verifies token and resolves shop
+ * - Uses Wix Client from WixAuthContext
+ * - wixClient.fetchWithAuth() includes Wix access token automatically
+ * - Backend receives Authorization header with Wix token
+ * - Backend verifies token using Wix APIs
+ * - Backend resolves shop from verified token
  *
  * STATES:
- * - Loading: Waiting for auth or fetching from API
- * - Authenticated: Auth successful, consultants available
- * - Error: Auth failed or API error
+ * - Loading: Wix Client initializing or fetching from API
+ * - Ready: Wix Client ready, consultants available
+ * - Error: Failed to fetch or API error
  * - Empty: No consultants found
  */
 function ConsultantListing() {
@@ -34,7 +35,7 @@ function ConsultantListing() {
   const navigate = useNavigate();
   const { user } = useWixUser();
   const userId = user?.wixDbId || getCustomerId();
-  const authState = useWixAuth();
+  const wixClient = useWixAuth();
 
   const { consultants, loading, error } = useSelector(
     (state) => state.consultants
@@ -43,61 +44,81 @@ function ConsultantListing() {
 
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   // Mark storefront component mount
   useEffect(() => {
     perfMark('storefront:mount');
   }, []);
 
-  // Load consultants once authenticated
+  // Wait for Wix Client to be ready
   useEffect(() => {
-    console.log("[STOREFRONT] Auth status:", authState?.status);
+    console.log("[STOREFRONT] Checking Wix Client...");
 
-    // Wait for auth to complete
-    if (authState?.status === "loading") {
-      console.log("[STOREFRONT] Waiting for Wix authentication...");
+    if (!wixClient) {
+      console.warn("[STOREFRONT] Wix Client not available");
       return;
     }
 
-    // Auth failed
-    if (authState?.status === "error") {
-      console.error("[STOREFRONT] Auth error:", authState.error);
+    console.log("[WIX-AUTH] ✓ Client ready");
+    console.log("[STOREFRONT] Wix authentication ready");
+    setAuthReady(true);
+  }, [wixClient]);
+
+  // Load consultants once Wix Client is ready
+  useEffect(() => {
+    if (!authReady || hasAttemptedFetch) {
       return;
     }
 
-    // Auth successful but no token
-    if (authState?.status !== "authenticated" || !authState?.accessToken) {
-      console.warn("[STOREFRONT] Not authenticated");
-      return;
-    }
-
-    // Only fetch once
-    if (hasAttemptedFetch) {
-      console.log("[STOREFRONT] Already attempted fetch, skipping");
-      return;
-    }
-
-    console.log("[STOREFRONT] Authenticated - fetching consultants");
-    console.log("[STOREFRONT] shopId:", authState.shopId);
-
-    setHasAttemptedFetch(true);
-    perfMark('storefront:fetch-start');
-
-    // Only fetch if data is not already in Redux
     if (!consultants?.findConsultant || consultants.findConsultant.length === 0) {
-      console.log("[STOREFRONT] Fetching consultants");
-      dispatch(fetchConsultants({
-        accessToken: authState.accessToken,
-        page: 1,
-        limit: 12,
-      })).then(() => {
-        perfMark('storefront:fetch-end');
-        perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
-      });
+      console.log("[STOREFRONT] Fetching consultants with authenticated Wix request");
+
+      setHasAttemptedFetch(true);
+      perfMark('storefront:fetch-start');
+
+      // Use Wix Client's fetchWithAuth to make authenticated request
+      // wixClient.fetchWithAuth() automatically includes Wix access token
+      wixClient
+        .fetchWithAuth(`${process.env.REACT_APP_BACKEND_HOST || "http://localhost:3500"}/api/consultant/wix-store-front`, {
+          method: "GET",
+          query: {
+            page: "1",
+            limit: "12",
+          },
+        })
+        .then((response) => {
+          console.log("[BACKEND] Response received from /api/consultant/wix-store-front");
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("[STOREFRONT] ✓ Consultants returned:", data.findConsultant?.length || 0);
+
+          // Dispatch to Redux to store the data
+          dispatch({
+            type: "consultants/setConsultants",
+            payload: data,
+          });
+
+          perfMark('storefront:fetch-end');
+          perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
+        })
+        .catch((error) => {
+          console.error("[STOREFRONT] ✗ Failed to fetch consultants:", error.message);
+
+          dispatch({
+            type: "consultants/setError",
+            payload: error.message,
+          });
+        });
     } else {
       console.log("[STOREFRONT] Using cached consultants:", consultants.findConsultant.length);
     }
-  }, [authState?.status, authState?.accessToken, hasAttemptedFetch, dispatch, consultants]);
+  }, [authReady, hasAttemptedFetch, dispatch, consultants, wixClient]);
 
   // Map consultants with proper data handling
   const mappedConsultants = React.useMemo(() => {
