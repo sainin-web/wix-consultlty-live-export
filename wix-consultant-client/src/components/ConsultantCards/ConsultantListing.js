@@ -103,11 +103,15 @@ function ConsultantListing() {
       const backendUrl = process.env.REACT_APP_BACKEND_HOST || "http://localhost:3500";
       const url = `${backendUrl}/api/consultant/wix-store-front?page=1&limit=12`;
 
+      console.log("[STOREFRONT] API URL:", url);
+      console.log("[STOREFRONT] Using fetchWithAuth with Wix authentication...");
+
       client
         .fetchWithAuth(url, {
           method: "GET",
         })
         .then((response) => {
+          console.log("[STOREFRONT] ✓ Fetch completed - Status:", response.status);
           console.log("[BACKEND] Response received from /api/consultant/wix-store-front");
 
           if (!response.ok) {
@@ -116,6 +120,7 @@ function ConsultantListing() {
           return response.json();
         })
         .then((data) => {
+          console.log("[STOREFRONT] ✓ JSON parsed successfully");
           console.log("[STOREFRONT] ✓ Consultants returned:", data.findConsultant?.length || 0);
 
           // Dispatch to Redux to store the data
@@ -128,7 +133,10 @@ function ConsultantListing() {
           perfMeasure('storefront:fetch-start', 'storefront:fetch-end');
         })
         .catch((error) => {
-          console.error("[STOREFRONT] ✗ Failed to fetch consultants:", error.message);
+          console.error("[STOREFRONT] ✗ Failed to fetch consultants");
+          console.error("[STOREFRONT] Error type:", error.constructor.name);
+          console.error("[STOREFRONT] Error message:", error.message);
+          console.error("[STOREFRONT] Full error:", error);
 
           dispatch({
             type: "consultants/setError",

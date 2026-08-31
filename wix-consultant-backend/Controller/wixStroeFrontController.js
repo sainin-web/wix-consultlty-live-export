@@ -11,10 +11,17 @@ const getAllConsultantWixStoreFront = async (req, res) => {
   const t = (label) => console.log(`[PERF] ${label}: ${Date.now() - startTime}ms`);
 
   try {
+    console.log("[BACKEND] ==========================================");
+    console.log("[BACKEND] Storefront consultant request received");
+    console.log("[BACKEND] URL:", req.originalUrl);
+    console.log("[BACKEND] Method:", req.method);
+    console.log("[BACKEND] Origin:", req.get('origin'));
+    console.log("[BACKEND] Referer:", req.get('referer'));
+
     t('start');
     const authHeader = req.headers.authorization;
 
-    console.log("[WIX-AUTH] Authorization header:", authHeader ? "present" : "missing");
+    console.log("[WIX-AUTH] Authorization header:", authHeader ? "✓ present" : "✗ missing");
 
     if (!authHeader) {
       console.log("[WIX-AUTH] ✗ No authorization header");
