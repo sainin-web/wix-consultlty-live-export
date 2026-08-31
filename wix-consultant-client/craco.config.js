@@ -59,8 +59,15 @@ module.exports = {
           return plugin;
         });
       } else if (buildTarget === 'consultly') {
-        webpackConfig.output.filename = 'static/js/consultly-[name].[contenthash:8].js';
-        webpackConfig.output.chunkFilename = 'static/js/consultly-[name].[contenthash:8].chunk.js';
+        // For Wix custom elements, the entry file MUST immediately register the custom element
+        // Output the main bundle as consultly-widget.js (no hash) so Wix script URL points directly to it
+        webpackConfig.output.filename = (pathData) => {
+          if (pathData.chunk.name === 'main') {
+            return 'consultly-widget.js'; // Entry point - immediate custom element registration
+          }
+          return 'consultly-[name].[contenthash:8].chunk.js';
+        };
+        webpackConfig.output.chunkFilename = 'consultly-[name].[contenthash:8].chunk.js';
 
         // Use consultly HTML template
         webpackConfig.plugins = webpackConfig.plugins.map(plugin => {

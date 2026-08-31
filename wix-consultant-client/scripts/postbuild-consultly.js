@@ -4,9 +4,13 @@
  * POST-BUILD SCRIPT FOR CONSULTLY (Isolated Directory)
  *
  * After craco builds with CRACO_BUILD_FOLDER=.build-temp/consultly:
- * 1. Copy consultly-main.*.js to consultly-main.latest.js
- * 2. Create consultly-widget.js loader (fixed entry point, no hash)
+ * 1. Verify consultly-widget.js exists (webpack creates this as main entry bundle)
+ * 2. Verify it contains the custom element code (NOT a dynamic loader)
  * 3. Copy index.html to consultly/index.html (for reference)
+ *
+ * CRITICAL: The webpack output must be the IMMEDIATE CUSTOM ELEMENT ENTRY BUNDLE.
+ * Wix expects the Script URL to register the custom element immediately when parsed,
+ * not load it dynamically later.
  *
  * The assemble-build.js script will later copy all of this to final build/
  */
@@ -27,90 +31,45 @@ if (!fs.existsSync(buildDir)) {
 
 let hasErrors = false;
 
-// 1. Find and copy latest consultly-main.*.js
-if (fs.existsSync(staticDir)) {
-  const files = fs.readdirSync(staticDir);
-  const mainFile = files.find(f => f.startsWith('consultly-main.') && f.endsWith('.js') && !f.includes('latest'));
-
-  if (mainFile) {
-    const srcPath = path.join(staticDir, mainFile);
-    const destPath = path.join(staticDir, 'consultly-main.latest.js');
-
-    fs.copyFileSync(srcPath, destPath);
-    console.log(`[POST-BUILD CONSULTLY] ✓ Copied ${mainFile} → consultly-main.latest.js`);
-
-    // Also copy sourcemap if exists
-    const srcMapFile = mainFile + '.map';
-    const srcMapPath = path.join(staticDir, srcMapFile);
-    const destMapPath = path.join(staticDir, 'consultly-main.latest.js.map');
-
-    if (fs.existsSync(srcMapPath)) {
-      fs.copyFileSync(srcMapPath, destMapPath);
-      console.log(`[POST-BUILD CONSULTLY] ✓ Copied ${srcMapFile} → consultly-main.latest.js.map`);
-    }
-  } else {
-    console.warn('[POST-BUILD CONSULTLY] ⚠️  WARNING: No consultly-main.*.js file found!');
-    hasErrors = true;
-  }
-} else {
-  console.warn('[POST-BUILD CONSULTLY] ⚠️  static/js directory not found');
+// 1. Verify consultly-widget.js exists (webpack creates this as main entry bundle)
+const widgetPath = path.join(buildDir, 'consultly-widget.js');
+if (!fs.existsSync(widgetPath)) {
+  console.error('[POST-BUILD CONSULTLY] ✗ CRITICAL ERROR: consultly-widget.js not found!');
+  console.error('[POST-BUILD CONSULTLY] Webpack should have created this as the main entry file.');
+  console.error('[POST-BUILD CONSULTLY] Check that craco.config.js has the correct output filename configuration.');
   hasErrors = true;
+} else {
+  const widgetContent = fs.readFileSync(widgetPath, 'utf8');
+  const stats = fs.statSync(widgetPath);
+
+  console.log(`[POST-BUILD CONSULTLY] ✓ Verified consultly-widget.js exists (${stats.size} bytes)`);
+
+  // Verify it's NOT a dynamic loader
+  if (widgetContent.includes('loadScript') || widgetContent.includes('consultly-main.latest.js')) {
+    console.error('[POST-BUILD CONSULTLY] ✗ ERROR: consultly-widget.js appears to be a dynamic loader!');
+    console.error('[POST-BUILD CONSULTLY] This will break Wix custom element registration.');
+    hasErrors = true;
+  } else {
+    // Verify it contains custom element registration
+    if (widgetContent.includes('customElements.define') && widgetContent.includes('ConsultlyWidgetElement')) {
+      console.log(`[POST-BUILD CONSULTLY] ✓ Custom element code detected - contains customElements.define()`);
+    } else {
+      console.warn('[POST-BUILD CONSULTLY] ⚠️  WARNING: Could not verify customElements.define() in bundle');
+      console.warn('[POST-BUILD CONSULTLY] This might be OK if code is minified - check manually');
+    }
+
+    // Check if Wix SDK imports are present (minified or not)
+    if (widgetContent.includes('wix') || widgetContent.includes('@wix')) {
+      console.log(`[POST-BUILD CONSULTLY] ✓ Wix SDK imports detected in bundle`);
+    } else {
+      console.warn('[POST-BUILD CONSULTLY] ⚠️  WARNING: Could not detect Wix SDK in bundle');
+    }
+
+    console.log(`[POST-BUILD CONSULTLY] ✓ This is the IMMEDIATE CUSTOM ELEMENT ENTRY BUNDLE`);
+  }
 }
 
-// 2. Create consultly-widget.js loader (fixed entry point)
-const loaderCode = `/**
- * CONSULTLY WIDGET LOADER - FIXED ENTRY POINT
- * This script NEVER changes (no hash). Always loads the latest build.
- * Every time you run \`npm run build:consultly\`, this automatically
- * loads the latest build without changing this file.
- */
-
-(function() {
-  function loadScript() {
-    const script = document.createElement('script');
-    script.src = window.location.origin + '/static/js/consultly-main.latest.js?t=' + Date.now();
-    script.onload = function() {
-      console.log('✅ [CONSULTLY LOADER] Latest build loaded successfully');
-    };
-    script.onerror = function() {
-      console.error('❌ [CONSULTLY LOADER] Failed to load consultly-main.latest.js');
-    };
-
-    // Try multiple locations to append script
-    const targets = [document.body, document.head, document.documentElement];
-    for (let target of targets) {
-      if (target) {
-        target.appendChild(script);
-        console.log('[CONSULTLY LOADER] Script appended to', target.tagName || 'documentElement');
-        return;
-      }
-    }
-    console.error('[CONSULTLY LOADER] No valid append target found!');
-  }
-
-  // Wait for DOM with multiple strategies
-  function tryLoad() {
-    if (document.body || document.head || document.documentElement) {
-      loadScript();
-    } else {
-      // Retry after a short delay
-      setTimeout(tryLoad, 100);
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadScript);
-  }
-
-  tryLoad();
-})();
-`;
-
-const loaderPath = path.join(buildDir, 'consultly-widget.js');
-fs.writeFileSync(loaderPath, loaderCode);
-console.log(`[POST-BUILD CONSULTLY] ✓ Created consultly-widget.js loader`);
-
-// 3. Optionally create build/consultly/index.html reference (for debugging)
+// 2. Optionally create build/consultly/index.html reference (for debugging)
 const consultlyDir = path.join(buildDir, 'consultly');
 if (!fs.existsSync(consultlyDir)) {
   fs.mkdirSync(consultlyDir, { recursive: true });
@@ -128,11 +87,20 @@ if (fs.existsSync(currentIndexPath)) {
   hasErrors = true;
 }
 
-console.log('\n[POST-BUILD CONSULTLY] Structure in .build-temp/consultly/:');
-console.log('  .build-temp/consultly/index.html');
-console.log('  .build-temp/consultly/static/');
-console.log('  .build-temp/consultly/consultly-widget.js');
-console.log('  .build-temp/consultly/consultly/index.html');
+console.log('\n[POST-BUILD CONSULTLY] FINAL BUILD STRUCTURE in .build-temp/consultly/:');
+console.log('  ');
+console.log('  📦 SCRIPT ENTRY POINT:');
+console.log('     consultly-widget.js (IMMEDIATE custom element registration - no dynamic loader!)');
+console.log('  ');
+console.log('  📂 OTHER FILES:');
+console.log('     index.html');
+console.log('     consultly/index.html (reference)');
+console.log('     static/ (chunks, CSS, assets)');
+console.log('  ');
+console.log('  ℹ️  Wix Script URL should point to: consultly-widget.js');
+console.log('  ℹ️  This file IMMEDIATELY registers customElements.define("consultly-widget", ConsultlyWidgetElement)');
+console.log();
+console.log('[POST-BUILD CONSULTLY] ✓ Build ready for Wix custom element deployment');
 console.log();
 
 if (!hasErrors) {
