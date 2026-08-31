@@ -65,13 +65,46 @@ function ConsultlyRoot({ wixClient }) {
  * Official Wix pattern:
  * - site.auth() provides Wix's token injection mechanism
  * - site.host() configures the Wix host context with app ID
- * - Wix automatically injects visitor/member access token
+ * - accessTokenListener exposes Wix's injector function
+ * - Wix calls this to inject visitor/member access token
  * - fetchWithAuth() uses the injected token for backend requests
  */
 class ConsultlyWidgetElement extends HTMLElement {
   constructor() {
     super();
     console.log("[CUSTOM-ELEMENT] consultly-widget constructed");
+
+    // CRITICAL: Initialize Wix Client in constructor so accessTokenListener
+    // is ready before connectedCallback. This must happen early.
+    this._initializeWixClient();
+  }
+
+  _initializeWixClient() {
+    try {
+      console.log("[WIX-CLIENT] Creating Wix Client with Site authentication...");
+
+      // Official Wix pattern for self-managed custom elements:
+      // 1. site.auth() - provides Wix's automatic token injection
+      // 2. site.host() - configures Wix host with app ID
+      this.wixClient = createClient({
+        auth: site.auth(),
+        host: site.host({
+          applicationId: WIX_APP_ID,
+        }),
+      });
+
+      console.log("[WIX-AUTH] Wix Client created");
+
+      // CRITICAL: Expose Wix's access token injector
+      // Wix calls this function to inject the access token into the client
+      // Without this, Wix has no way to pass the token to our custom element
+      this.accessTokenListener = this.wixClient.auth.getAccessTokenInjector();
+      console.log("[WIX-AUTH] ✓ Access token listener registered");
+      console.log("[WIX-AUTH] Waiting for Wix to inject access token...");
+    } catch (error) {
+      console.error("[WIX-CLIENT] Failed to create Wix Client:", error.message);
+      this.wixClient = null;
+    }
   }
 
   connectedCallback() {
@@ -84,37 +117,28 @@ class ConsultlyWidgetElement extends HTMLElement {
       this._reactRoot = ReactDOM.createRoot(this);
     }
 
-    // Initialize and mount React app with Wix Client
-    this._initialize();
+    // Mount React app with Wix Client
+    this._mountReact();
   }
 
-  async _initialize() {
+  _mountReact() {
     try {
-      console.log("[WIX-CLIENT] Initializing Wix Client with Site host context...");
+      if (!this.wixClient) {
+        throw new Error("Wix Client not initialized");
+      }
 
-      // Official Wix pattern for self-managed custom elements:
-      // 1. site.auth() - provides Wix's automatic token injection
-      // 2. site.host() - configures Wix host with app ID
-      const wixClient = createClient({
-        auth: site.auth(),
-        host: site.host({
-          applicationId: WIX_APP_ID,
-        }),
-      });
-
-      console.log("[WIX-AUTH] Wix Client initialized with Site host authentication");
-      console.log("[WIX-AUTH] Wix will inject access token automatically");
+      console.log("[WIX-AUTH] ✓ Wix Client ready - mounting React app");
 
       // Mount React app with the Wix Client
       // React components will use wixClient.fetchWithAuth() for authenticated requests
       this._reactRoot.render(
-        <ConsultlyRoot wixClient={wixClient} />
+        <ConsultlyRoot wixClient={this.wixClient} />
       );
 
-      console.log("[CUSTOM-ELEMENT] ✓ React app mounted - waiting for Wix token injection");
+      console.log("[CUSTOM-ELEMENT] ✓ React app mounted - Wix will inject token now");
 
     } catch (error) {
-      console.error("[CUSTOM-ELEMENT] ✗ Initialization failed:", error.message);
+      console.error("[CUSTOM-ELEMENT] ✗ Failed to mount React:", error.message);
       console.error("[CUSTOM-ELEMENT] Details:", error);
 
       // Render error state
